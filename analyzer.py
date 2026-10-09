@@ -27,14 +27,11 @@ def parse_date(value: str | None) -> datetime | None:
         return None
     raw = value.strip()
     if raw.endswith("Z"):
-        raw = raw[:-1]
-    if "." in raw:
-        head, _, frac = raw.partition(".")
-        frac = re.sub(r"\D", "", frac)[:6].ljust(6, "0")
-        raw = f"{head}.{frac}"
+        raw = raw[:-1] + "+00:00"
     try:
         d = datetime.fromisoformat(raw)
     except ValueError:
+        d = None
         for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
             try:
                 d = datetime.strptime(raw[:19], fmt)
