@@ -1,6 +1,7 @@
 import html
 import json
 import sys
+import threading
 from contextvars import ContextVar
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -12,6 +13,8 @@ from analyzer import build_ticket_info, find_merge_candidates, hours_between, pa
 from config import AGENT_EMAIL, AGENT_NAME, CACHE_FILE, MOVIDESK_WEB_URL  # noqa: E402
 
 SLA_LEVELS = ("VENCIDO", "RISCO")
+
+CACHE_LOCK = threading.RLock()
 
 INTERNO = "@faturagil.com.br"
 
@@ -331,6 +334,7 @@ def build_payload(
         ],
         "sla": [ticket_dict(t) for t in sla_in_risk],
         "pesquisa": pesquisa,
+        "pesquisa_periodo": (load_cache_raw().get("survey_periodo") or {}),
         "pendencias": pendencias,
         "agenda": agenda,
         "acoes": acoes,
@@ -998,20 +1002,57 @@ def montar_solucao(actions: list[dict]) -> dict:
 
 
 def load_cache_raw() -> dict:
-    if not CACHE_FILE.exists():
-        return {}
-    try:
-        raw = json.loads(CACHE_FILE.read_text(encoding="utf-8"))
-    except (ValueError, OSError):
-        return {}
-    if not isinstance(raw, dict):
-        return {}
-    return raw
+    with CACHE_LOCK:
+        if not CACHE_FILE.exists():
+            return {}
+        try:
+            raw = json.loads(CACHE_FILE.read_text(encoding="utf-8"))
+        except (ValueError, OSError):
+            return {}
+        if not isinstance(raw, dict):
+            return {}
+        return raw
 
 
 def save_cache_raw(raw: dict) -> None:
-    CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    CACHE_FILE.write_text(json.dumps(raw, ensure_ascii=False, indent=1), encoding="utf-8")
+    with CACHE_LOCK:
+        CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        CACHE_FILE.write_text(json.dumps(raw, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
+def merge_historico(novos: list[dict]) -> int:
+    """Faz upsert de tickets no indice de historico de forma atomica. Retorna o total."""
+    with CACHE_LOCK:
+        raw = load_cache_raw()
+        indice: dict[int, dict] = {}
+        for t in raw.get("historico") or []:
+            if isinstance(t, dict) and t.get("id"):
+                indice[int(t["id"])] = t
+        for t in novos:
+            if isinstance(t, dict) and t.get("id"):
+                indice[int(t["id"])] = t
+        raw["historico"] = list(indice.values())
+        raw["historico_salvo_em"] = datetime.now().isoformat(timespec="seconds")
+        save_cache_raw(raw)
+        return len(indice)
+
+
+def historico_cobertura() -> dict:
+    """Informa o intervalo coberto pelo indice de historico (por resolvedIn)."""
+    raw = load_cache_raw()
+    datas = []
+    for t in raw.get("historico") or []:
+        d = parse_date(t.get("resolvedIn") or t.get("closedIn") or t.get("createdDate"))
+        if d:
+            datas.append(d)
+    if not datas:
+        return {"total": 0, "min": "", "max": "", "salvo_em": raw.get("historico_salvo_em") or ""}
+    return {
+        "total": len(raw.get("historico") or []),
+        "min": min(datas).strftime("%d/%m/%Y"),
+        "max": max(datas).strftime("%d/%m/%Y"),
+        "salvo_em": raw.get("historico_salvo_em") or "",
+    }
 
 
 def _agent_bucket(raw: dict, agente: str) -> dict | None:
