@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel Movidesk — Jefferson</title>
+<style>
+  :root {
+    --bg: #f4f6f9; --card: #ffffff; --text: #1f2933; --muted: #6b7280;
+    --border: #e5e7eb; --blue: #2563eb; --red: #dc2626; --amber: #d97706;
+    --green: #16a34a; --violet: #7c3aed;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); }
+  header { background: #111827; color: #fff; padding: 16px 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+  header .sub { color: #9ca3af; font-size: 13px; }
+  .spacer { flex: 1; }
+  .badge { font-size: 12px; background: #1f2937; border: 1px solid #374151; padding: 5px 10px; border-radius: 999px; color: #d1d5db; }
+  button { cursor: pointer; border: 0; border-radius: 8px; padding: 10px 18px; font-size: 14px; font-weight: 600; }
+  #btnConsultar { background: var(--blue); color: #fff; }
+  #btnConsultar:disabled { background: #60a5fa; cursor: wait; }
+  main { max-width: 1200px; margin: 24px auto; padding: 0 16px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 22px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .card .num { font-size: 30px; font-weight: 700; line-height: 1.1; }
+  .card .lbl { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-top: 4px; }
+  .card.red .num { color: var(--red); } .card.amber .num { color: var(--amber); }
+  .card.green .num { color: var(--green); } .card.violet .num { color: var(--violet); }
+  .card.blue .num { color: var(--blue); } .card.teal .num { color: #0d9488; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .tab { background: var(--card); border: 1px solid var(--border); color: var(--muted); padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; }
+  .tab.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .tab .cnt { opacity: .8; font-weight: 400; }
+  .panel { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { text-align: left; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .03em; padding: 8px 10px; border-bottom: 2px solid var(--border); }
+  td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  tr:hover td { background: #f9fafb; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; }
+  .pill.red { background: #fee2e2; color: var(--red); }
+  .pill.amber { background: #fef3c7; color: var(--amber); }
+  .pill.green { background: #dcfce7; color: var(--green); }
+  .pill.gray { background: #f3f4f6; color: var(--muted); }
+  .muted { color: var(--muted); }
+  .empty { text-align: center; color: var(--muted); padding: 30px 0; }
+  #banner { display: none; margin-bottom: 16px; padding: 12px 16px; border-radius: 10px; font-size: 14px; }
+  #banner.err { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+  #banner.info { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+  #spin { display: none; width: 15px; height: 15px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: r .7s linear infinite; vertical-align: -3px; margin-right: 7px; }
+  @keyframes r { to { transform: rotate(360deg); } }
+  ol.acoes { margin: 0; padding-left: 20px; line-height: 1.9; font-size: 14px; }
+  footer { text-align: center; color: var(--muted); font-size: 12px; margin: 26px 0; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1 id="tituloPainel">Painel de Monitoramento</h1>
+    <div class="sub" id="subPainel">Tickets Movidesk: parados, mescláveis e SLA</div>
+  </div>
+  <div class="spacer"></div>
+  <select id="selAgente" title="Atendente" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;max-width:230px;background:#fff"></select>
+  <select id="selServico" title="Filtrar por serviço" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;max-width:230px;background:#fff"></select>
+  <span class="badge" id="ultima">Sem dados</span>
+  <button id="btnConsultar"><span id="spin"></span><span id="btnTxt">Consultar</span></button>
+  <button id="btnForcar" title="Ignora o cache da pesquisa de satisfação (12h) e refaz tudo" style="background:transparent;color:var(--muted);border:1px solid var(--border)">Forçar tudo</button>
+</header>
+
+<main>
+  <div id="aviso" style="background:#fff8e1;border:1px solid #ffe08a;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:13px">
+    ⚠️ <b>Este painel não consulta automaticamente.</b> Os dados exibidos vêm do cache local (última consulta) e <b>não</b> se atualizam sozinhos. Clique em <b>Consultar</b> para buscar no Movidesk (ou em "Forçar tudo" para atualizar também a pesquisa de satisfação).
+  </div>
+  <div id="banner"></div>
+  <div id="bannerInsat"></div>
+
+  <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px;font-size:13px;color:var(--muted)">Produtividade do dia: Resolvidos (base dia útil anterior): <b id="mResolvidos">0</b> • Interagiu hoje: <b id="mInteragiu">0</b> • Ativos totais: <b id="mAtivos2">0</b> • 1ª resposta da equipe (média): <b id="m1a">–</b></div>
+  <div class="cards">
+    <div class="card blue"><div class="num" id="nAtivos">–</div><div class="lbl">Tickets ativos</div></div>
+    <div class="card red"><div class="num" id="nCrit">–</div><div class="lbl">Críticos (&gt;48h parado)</div></div>
+    <div class="card amber"><div class="num" id="nAten">–</div><div class="lbl">Atenção (&gt;24h)</div></div>
+    <div class="card violet"><div class="num" id="nMescla">–</div><div class="lbl">Candidatos a mescla</div></div>
+    <div class="card green"><div class="num" id="nSla">–</div><div class="lbl">SLA em risco</div></div>
+    <div class="card teal"><div class="num" id="nSat">–</div><div class="lbl" id="lSat">Satisfação</div></div>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-tab="criticos">Críticos <span class="cnt" id="cCrit"></span></button>
+    <button class="tab" data-tab="pendencias">Minhas pendências <span class="cnt" id="cPend"></span></button>
+    <button class="tab" data-tab="kanban">Kanban</button>
+    <button class="tab" data-tab="agenda">Agenda do dia <span class="cnt" id="cAgenda"></span></button>
+    <button class="tab" data-tab="plantao">Plantão <span class="cnt" id="cPlantao"></span></button>
+    <button class="tab" data-tab="atencao">Atenção <span class="cnt" id="cAten"></span></button>
+    <button class="tab" data-tab="mesclas">Mescláveis <span class="cnt" id="cMescla"></span></button>
+    <button class="tab" data-tab="pesquisa">Satisfação <span class="cnt" id="cSat"></span></button>
+    <button class="tab" data-tab="sla">SLA <span class="cnt" id="cSla"></span></button>
+    <button class="tab" data-tab="acoes">Ações sugeridas</button>
+    <button class="tab" data-tab="duvidas">Dúvidas / Histórico</button>
+    <button class="tab" data-tab="ranking">Equipe / Ranking</button>
+    <button class="tab" data-tab="ok">OK <span class="cnt" id="cOk"></span></button>
+  </div>
+
+  <div class="panel" id="painel"><div class="empty">Carregando…</div></div>
+</main>
+
+<footer>Limite da API: 10 consultas/min • dados do cache local até você clicar em Consultar</footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let dados = null;
+let aba = "criticos";
+let agentes = [];
+let agenteSel = localStorage.getItem("agenteSel") || "";
+let agenteNomePadrao = "Atendente";
+let histItens = null;
+let histQuery = "";
+let histMsg = "";
+let histAcoes = {};
+let plantao = null;
+let mergeEscopo = "atual";
+let mergeDados = null;
+let mergeKey = "";
+let mergeMostrarConcluidas = false;
+let ranking = null;
+let servicos = null;
+let solucoes = {};
+let servicoSel = localStorage.getItem("servicoSel") || "";
+
+function servicoRaiz(x) {
+  return ((x && x.servico) || "").split(" / ")[0].trim();
+}
+function filtrarServico(lista) {
+  if (!servicoSel) return lista;
+  const alvo = servicoSel.toLowerCase();
+  return (lista || []).filter(x => ((x.servico || "").toLowerCase()).includes(alvo));
+}
+function popularServicos() {
+  const sel = $("selServico");
+  if (!sel || !dados) return;
+  const nomes = new Set();
+  const listas = [dados.criticos, dados.atencao, dados.ok, dados.sla,
+    (dados.pendencias && dados.pendencias.todos) || []];
+  listas.forEach(l => (l || []).forEach(x => { const r = servicoRaiz(x); if (r) nomes.add(r); }));
+  const ordenado = [...nomes].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  if (servicoSel && !ordenado.includes(servicoSel)) servicoSel = "";
+  sel.innerHTML = `<option value="">Todos os serviços</option>`
+    + ordenado.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
+  sel.value = servicoSel;
+}
+
+function nomeAgente(email) {
+  if (email === "*") return "Todos os atendentes";
+  const a = agentes.find(x => (x.email || "").toLowerCase() === (email || "").toLowerCase());
+  return a ? a.nome : (email || "Todos os atendentes");
+}
+
+function atualizarCabecalho() {
+  const nome = nomeAgente(agenteSel);
+  $("tituloPainel").textContent = "Painel de Monitoramento — " + nome;
+  document.title = "Painel Movidesk — " + nome;
+}
+
+async function carregarAgentes() {
+  try {
+    const r = await fetch("/api/agentes");
+    const j = await r.json();
+    agentes = j.agentes || [];
+    agenteNomePadrao = j.agente_nome || agenteNomePadrao;
+    const sel = $("selAgente");
+    const opts = agentes.map(a => `<option value="${esc(a.email)}">${esc(a.nome)}</option>`).join("");
+    sel.innerHTML = `<option value="*">Todos os atendentes</option>` + opts;
+    const valido = agenteSel === "*" || agentes.some(a => a.email === agenteSel);
+    if (!valido) agenteSel = j.default || (agentes[0] && agentes[0].email) || "*";
+    sel.value = agenteSel;
+    atualizarCabecalho();
+  } catch (e) {
+    banner("Falha ao carregar atendentes: " + e, "err");
+  }
+}
+
+function dec(s) {
+  const t = document.createElement("textarea");
+  t.innerHTML = s == null ? "" : String(s);
+  return t.value;
+}
+function esc(s) {
+  return dec(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function pill(nivel) {
+  const m = { CRITICO:["red","Crítico"], ATENCAO:["amber","Atenção"], OK:["green","OK"] };
+  const [cls, txt] = m[nivel] || ["gray", nivel];
+  return `<span class="pill ${cls}">${esc(txt)}</span>`;
+}
+function webBase() {
+  return (((dados && dados.movidesk_web) || "https://faturagil.movidesk.com") + "").replace(/\/+$/, "");
+}
+function linkTicket(id) {
+  return `<a href="${webBase()}/Ticket/Edit/${id}" target="_blank" rel="noopener" title="Abrir no Movidesk"><b>#${id}</b></a>`;
+}
+function etiquetaTag(x) {
+  if (x.etiqueta === "Aguarda cliente") return `<span class="pill green" title="Última ação: ${esc(x.ultima_acao_por||"você")}">Aguarda cliente</span>`;
+  if (x.etiqueta === "Precisa sua resposta") return `<span class="pill red" title="Última ação: ${esc(x.ultima_acao_por||"cliente")}">Precisa sua resposta</span>`;
+  return "";
+}
+
+function ligacaoTag(x) {
+  const n = x.tentativas || 0;
+  if (!n) return `<span class="muted">—</span>`;
+  const res = x.ligacoes_resumo || {};
+  const resumoTxt = Object.entries(res).map(([k, v]) => `${v} ${k}`).join(" • ");
+  const lst = (x.ligacoes_lista || []).slice().reverse()
+    .map(l => `<li><b>${esc(l.data)}</b> ${esc(l.origem || "")}<br><span class="muted">${esc(l.resumo)}</span></li>`).join("");
+  return `<details style="font-size:12px;display:inline-block"><summary style="cursor:pointer" title="${esc(resumoTxt || "Histórico de contatos/ligações")}">📞 ${n}${x.ultima_ligacao ? ` <span class="muted">(${esc(x.ultima_ligacao.slice(0, 10))})</span>` : ""}</summary>${resumoTxt ? `<div class="muted" style="margin-top:4px">${esc(resumoTxt)}</div>` : ""}<ul style="margin:6px 0 4px 16px;padding:0;max-width:420px">${lst}</ul></details>`;
+}
+
+function canalTag(x) {
+  if (!x.canal) return "";
+  const c = x.canal;
+  const cls = /WhatsApp|Chat/i.test(c) ? "green" : /Liga/i.test(c) ? "amber" : /Form/i.test(c) ? "gray" : "";
+  return ` <span class="pill ${cls}" title="Canal de entrada">${esc(c)}</span>`;
+}
+function flagsTag(x) {
+  let out = "";
+  if (x.reaberto) out += ` <span class="pill amber" title="Ticket reaberto${x.reaberto_em ? " em " + esc(x.reaberto_em) : ""}">Reaberto</span>`;
+  if (x.fcr) out += ` <span class="pill green" title="Resolvido no primeiro contato (FCR)">FCR</span>`;
+  if (x.chamada_perdida) out += ` <span class="pill red" title="Chamada perdida/abandonada (origin ${esc(String(x.origin))})">Chamada perdida</span>`;
+  if (x.vinculado) {
+    const det = [...(x.filho_de || []).map(i => `pai #${i}`), ...(x.pai_de || []).map(i => `filho #${i}`)].join(", ");
+    out += ` <span class="pill gray" title="Tickets vinculados: ${esc(det)}">${x.filho_de && x.filho_de.length ? "É filho" : "Tem filhos"}</span>`;
+  }
+  if (x.sla_real_ok === false) out += ` <span class="pill red" title="1ª resposta após o prazo do SLA">SLA resp. atrasada</span>`;
+  else if (x.sla_real_ok === true) out += ` <span class="pill green" title="1ª resposta dentro do SLA">SLA resp. OK</span>`;
+  return out;
+}
+function vinculoDetalhe(x) {
+  if (!x.vinculado) return "";
+  const web = ((dados && dados.movidesk_web) || "https://faturagil.movidesk.com").replace(/\/$/, "");
+  const itens = [
+    ...(x.filho_de || []).map(i => `pai <a href="${web}/Ticket/Edit/${i}" target="_blank" rel="noopener">#${i}</a>`),
+    ...(x.pai_de || []).map(i => `filho <a href="${web}/Ticket/Edit/${i}" target="_blank" rel="noopener">#${i}</a>`),
+  ];
+  return `<br><small class="pill gray" title="Vínculos deste ticket">${itens.join(" • ")}</small>`;
+}
+function slaTag(x) {
+  if (x.sla_nivel === "VENCIDO") return `<br><small class="pill red" title="${esc(x.sla_detalhe)}">SLA vencido</small>`;
+  if (x.sla_nivel === "RISCO") return `<br><small class="pill amber" title="${esc(x.sla_detalhe)}">SLA em risco</small>`;
+  return "";
+}
+function tempoAtendenteTag(x) {
+  if (!x.tempo_com_atendente) return "";
+  return `<br><small class="muted" title="Com o atendente atual desde ${esc(x.com_atendente_desde || "")}">com ${esc(x.owner || "atendente")} há ${esc(x.tempo_com_atendente)}</small>`;
+}
+
+function tabelaTickets(lista) {
+  if (!lista.length) return `<div class="empty">Nenhum registro.</div>`;
+  const linhas = lista.map(t => `
+    <tr>
+      <td>${linkTicket(t.id)}</td>
+      <td>${esc(t.cliente)}${canalTag(t)}</td>
+      <td>${esc(t.owner||"—")}${tempoAtendenteTag(t)}</td>
+      <td>${esc(t.assunto)}${flagsTag(t)}${vinculoDetalhe(t)}</td>
+      <td>${esc(t.ultima_acao)}</td>
+      <td><b>${esc(t.parado_display)}</b>${slaTag(t)}</td>
+      <td>${esc(t.justification || t.status)}</td>
+      <td>${etiquetaTag(t)}</td>
+      <td>${ligacaoTag(t)}</td>
+      <td>${pill(t.nivel)}</td>
+    </tr>`).join("");
+  return `<table>
+    <thead><tr><th>Ticket</th><th>Cliente</th><th>Responsável</th><th>Assunto</th><th>Última ação</th><th>Parado há</th><th>Situação</th><th>Próximo passo</th><th>Contato</th><th>Classificação</th></tr></thead>
+    <tbody>${linhas}</tbody></table>`;
+}
+
+function tabelaMesclas(lista) {
+  if (!lista.length) return `<div class="empty">Nenhum candidato a mescla.</div>`;
+  const linhas = lista.map(c => `
+    <tr>
+      <td><b>#${c.ticket_a}</b></td>
+      <td><b>#${c.ticket_b}</b></td>
+      <td>${esc(c.cliente)}</td>
+      <td>${esc(c.situation_a || '')}</td>
+      <td>${esc(c.situation_b || '')}</td>
+      <td>${esc(c.motivo)}<br><span class="muted" style="font-size:12px">A: ${esc(c.service_a || '—')} • B: ${esc(c.service_b || '—')}</span></td>
+      <td>${esc(c.acao)} (pai #${c.pai})</td>
+    </tr>`).join("");
+  return `<table>
+    <thead><tr><th>Ticket A (pai)</th><th>Ticket B</th><th>Cliente</th><th>Classificação A</th><th>Classificação B</th><th>Motivo da consideração</th><th>Ação sugerida</th></tr></thead>
+    <tbody>${linhas}</tbody></table>
+    <p class="muted" style="margin-top:12px;font-size:13px">Ticket mais antigo sugerido como pai da mescla. Confirme que ambos estão abertos antes de mesclar.</p>`;
+}
+
+function tabelaSla(lista) {
+  if (!lista.length) return `<div class="empty">Nenhum ticket com SLA em risco. Observação: a API expõe os campos de SLA (slaSolutionDate, slaAgreement), mas nenhum dos tickets desta conta vem com SLA preenchido — se houver SLA configurado no Movidesk e mesmo assim aparecer vazio, é limitação da API pública.</div>`;
+  const linhas = lista.map(t => `
+    <tr>
+      <td><b>#${t.id}</b></td>
+      <td>${esc(t.cliente)}</td>
+      <td>${esc(t.sla_nivel)}</td>
+      <td>${esc(t.sla_detalhe)}</td>
+      <td>${esc(t.sla_real_resposta || "—")}${t.sla_real_ok === false ? ' <span class="pill red">fora do prazo</span>' : t.sla_real_ok === true ? ' <span class="pill green">no prazo</span>' : ''}</td>
+      <td>${esc(t.assunto)}</td>
+    </tr>`).join("");
+  return `<table>
+    <thead><tr><th>Ticket</th><th>Cliente</th><th>Nível</th><th>Detalhe</th><th>1ª resposta real</th><th>Assunto</th></tr></thead>
+    <tbody>${linhas}</tbody></table>`;
+}
+
+let ordemSat = { campo: "data_iso", dir: "desc" };
+
+function tabelaPesquisa(lista, resumo) {
+  if (!lista || !lista.length) return `<div class="empty">Nenhuma resposta de pesquisa de satisfação nos tickets encontrados.</div>`;
+  const itens = [...lista];
+  const { campo, dir } = ordemSat;
+  itens.sort((a, b) => {
+    let va = a[campo], vb = b[campo];
+    if (campo === "ticket") { va = va || 0; vb = vb || 0; }
+    else { va = String(va == null ? "" : va).toLowerCase(); vb = String(vb == null ? "" : vb).toLowerCase(); }
+    if (va < vb) return dir === "asc" ? -1 : 1;
+    if (va > vb) return dir === "asc" ? 1 : -1;
+    return 0;
+  });
+  const th = (c, rotulo) => {
+    const seta = ordemSat.campo === c ? (ordemSat.dir === "asc" ? " ▲" : " ▼") : " ↕";
+    return `<th class="ord" data-campo="${c}" style="cursor:pointer;user-select:none">${rotulo}${seta}</th>`;
+  };
+  const linhas = itens.map(i => {
+    const cls = i.satisfeito ? "green" : (i.insatisfeito ? "red" : "gray");
+    return `
+    <tr>
+      <td>${linkTicket(i.ticket)}</td>
+      <td>${esc(i.cliente)}</td>
+      <td>${esc(i.assunto)}</td>
+      <td>${esc(i.data)}</td>
+      <td><span class="pill ${cls}">${esc(i.rotulo)}</span></td>
+      <td>${i.comentario ? esc(i.comentario) : '<span class="muted">—</span>'}</td>
+    </tr>`;
+  }).join("");
+  const pct = resumo && resumo.pct_satisfeitos != null ? resumo.pct_satisfeitos + "% satisfeitos" : "";
+  const nps = resumo && resumo.nps != null ? ` • NPS ${resumo.nps}` : "";
+  const periodo = resumo && resumo.periodo ? ` • ${resumo.periodo}` : "";
+  return `<p class="muted" style="margin:0 0 10px;font-size:13px">${lista.length} resposta(s) — todas as do período${periodo} • ${pct}${nps} • clique nos cabeçalhos para ordenar</p>
+  <table>
+    <thead><tr>${th("ticket","Ticket")}${th("cliente","Cliente")}${th("assunto","Assunto")}${th("data_iso","Data")}${th("rotulo","Nota")}${th("comentario","Comentário")}</tr></thead>
+    <tbody>${linhas}</tbody></table>`;
+}
+
+
+function filtrarLista(lista,busca){
+  let out = lista;
+  if(servicoSel) out = out.filter(x=>((x.servico||"").toLowerCase()).includes(servicoSel.toLowerCase()));
+  if(!busca) return out;
+  const b=busca.toLowerCase();
+  const campo=(x)=>[x.id,x.cliente,x.assunto,x.justification,x.status,x.owner,x.etiqueta,x.ultima_acao_por].filter(Boolean).join(" ");
+  return out.filter(x=>esc(campo(x)).toLowerCase().includes(b));
+}
+function tabelaPendencias(p) {
+  if (!p) return `<div class="empty">Sem dados.</div>`;
+  const busca=document.getElementById("buscaPend")?document.getElementById("buscaPend").value.toLowerCase():"";
+  const rs=p.resumo||{};
+  const metr=[];
+  if(rs.aguarda_cliente!=null) metr.push(`<span class="pill green">${rs.aguarda_cliente} aguarda cliente</span>`);
+  if(rs.precisa_resposta!=null) metr.push(`<span class="pill red">${rs.precisa_resposta} precisam da sua resposta</span>`);
+  if(rs.cliente_respondeu) metr.push(`<span class="pill red">${rs.cliente_respondeu} com retorno recente do cliente</span>`);
+  if(rs.primeira_acao_media!=null) metr.push(`<span class="muted" title="Tempo entre a abertura pelo cliente e a 1ª ação da equipe">1ª resposta da equipe: média ${rs.primeira_acao_media}h / mediana ${rs.primeira_acao_mediana}h (n=${rs.primeira_acao_total})</span>`);
+  const header=`<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px"><input id="buscaPend" oninput="render()" placeholder="Buscar ID, cliente, assunto, situação" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:280px"><span class="muted" style="font-size:13px">Ordenado por última ação (mais antigo primeiro)</span>${metr.join(" ")}</div>`;
+  const bloco=(t,l)=>{const lf=filtrarLista(l,busca); return `<h3 style="margin:18px 0 6px;font-size:14px">${t} <span class="muted">(${lf.length}/${(l||[]).length})</span></h3>${lf&&lf.length?`<table><thead><tr><th>Ticket</th><th>Cliente</th><th>Responsável</th><th>Assunto</th><th>Última ação</th><th>Situação</th><th>Próximo passo</th><th>1ª ação</th><th>Contato</th></tr></thead><tbody>${lf.map(x=>`<tr><td>${linkTicket(x.id)}</td><td>${esc(x.cliente)}${canalTag(x)}</td><td>${esc(x.owner||'—')}${tempoAtendenteTag(x)}</td><td>${esc(x.assunto)}${flagsTag(x)}</td><td>${esc(x.ultima_acao)}${x.ultima_acao_por?`<br><small class="muted">${esc(x.ultima_acao_por)}</small>`:""}</td><td>${esc(x.justification||x.status)}${x.cliente_respondido?' <span class="pill red">Cliente respondeu</span>':''}</td><td>${etiquetaTag(x)}</td><td>${x.primeira_acao_h!=null?esc(x.primeira_acao_h)+"h":'<span class="muted">—</span>'}</td><td>${ligacaoTag(x)}</td></tr>`).join('')}</tbody></table>`:"<p class=\"muted\">—</p>"}`; };
+  return header+bloco('Todos os ativos do filtro ('+nomeAgente(agenteSel)+')',p.todos)+bloco('Aguardando retorno do cliente (justification tipo "Retorno do Cliente")',p.aguardando_retorno)+bloco('Aguardando eu (não é retorno do cliente)',p.aguardando_eu)+bloco('Tickets sem justificativa',p.sem_just);
+}function tabelaKanban(k, pend) {
+  if (!k) return `<div class="empty">Sem dados.</div>`;
+  const mapa=(pend&&pend.todos)?Object.fromEntries(pend.todos.map(x=>[x.id,x])):{};
+  const card=(x)=>{const m=mapa[x.id]; const cr=m&&m.cliente_respondido?' <span class="pill red">Cliente respondeu</span>':''; const et=etiquetaTag(x); const own=x.owner?`<br><small class="muted">Responsável: ${esc(x.owner)}</small>`:''; return `<div class="card">${linkTicket(x.id)}${cr} — ${esc(x.cliente)}${canalTag(x)}${et?'<br>'+et:''}<br><small>${esc(x.assunto)}</small>${flagsTag(x)}<br><small class="muted">Última ação: ${esc(x.ultima_acao)}${x.ultima_acao_por?` (${esc(x.ultima_acao_por)})`:''}</small>${own}<br><small>${esc(x.justification||x.status)}</small> ${ligacaoTag(x)}</div>`;};
+  return `<div class="grid kanban"><div class="col"><h3>Aguardando</h3>${(k.aguardando||[]).map(card).join('')}</div><div class="col"><h3>Em atendimento</h3>${(k.em_atendimento||[]).map(card).join('')}</div><div class="col"><h3>Retorno do Cliente</h3>${(k.retorno||[]).map(card).join('')}</div><div class="col"><h3>Dev / Análise</h3>${(k.dev||[]).map(card).join('')}</div></div>`;
+}function tabelaAgenda(ag) {
+  if (!ag) return `<div class="empty">Sem dados da agenda. Clique em Consultar.</div>`;
+  const r = ag.resumo;
+  const bloco = (titulo, lista, formatar) => {
+    const itens = (lista || []).map(x => `<li>${formatar(x)}</li>`).join("");
+    return `<h3 style="margin:18px 0 6px;font-size:14px">${titulo} <span class="muted">(${(lista||[]).length})</span></h3>
+      ${itens ? `<ul style="margin:0;padding-left:20px;line-height:1.7;font-size:13.5px">${itens}</ul>` : '<p class="muted" style="margin:0;font-size:13.5px">—</p>'}`;
+  };
+  return `
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+    <button id="btnCopiar" style="background:#0d9488;color:#fff">Copiar texto da agenda</button>
+    <button id="btnRestaurarModelo" style="background:#6b7280;color:#fff">Restaurar modelo padrão</button>
+    <span class="muted" style="font-size:13px">Data: ${esc(ag.data)} • Resolvidos ${r.resolvidos} • Em atendimento ${r.em_atendimento} • Parados ${r.parados} • Fora da carga ${r.fora_carga}</span>
+  </div>
+  <textarea id="agendaTexto" rows="24" spellcheck="false" style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px;width:100%;white-space:pre-wrap;font-size:13px;line-height:1.6;font-family:Consolas,Menlo,monospace">${esc(ag.texto)}</textarea>
+  ${bloco("🎉 Tickets resolvidos no dia", ag.resolvidos, x => `<b>#${x.id}</b> — ${esc(x.cliente)} — ${esc(x.assunto)}`)}
+  ${bloco("🎉 Tickets resolvidos ontem", ag.resolvidos_ontem, x => `<b>#${x.id}</b> — ${esc(x.cliente)} — ${esc(x.assunto)}`)}
+  ${bloco("⏭️ Em atendimento (interação nos últimos2 dias e aberto)", ag.em_atendimento, x => `<b>#${x.id}</b> — ${esc(x.justification || x.status)} — ${esc(x.cliente)}`)}
+  ${bloco("📎 Interagiu no dia", ag.interagiu, x => `<b>#${x.id}</b> — ${esc(x.status)} — ${esc(x.cliente)}`)}
+  ${bloco("🤝 Participação fora da carga (ativos)", ag.fora_carga, x => `<b>#${x.id}</b> — ${esc(x.justification || x.status)} — ${esc(x.cliente)} — ${esc(x.assunto)}`)}`;
+}
+
+let modeloAgendaPadrao = "";
+function render() {
+  if (dados && dados.agenda && !modeloAgendaPadrao) modeloAgendaPadrao = dados.agenda.texto;
+
+  if (aba === "duvidas") { $("painel").innerHTML = telaDuvidas(); return; }
+  if (aba === "plantao") {
+    if (!plantao) {
+      $("painel").innerHTML = `<div class="empty">Carregando plantão…</div>`;
+      carregarPlantao();
+      return;
+    }
+    $("painel").innerHTML = telaPlantao();
+    return;
+  }
+  if (aba === "ranking") {
+    if (!ranking) {
+      $("painel").innerHTML = `<div class="empty">Carregando ranking…</div>`;
+      carregarRanking();
+      return;
+    }
+    $("painel").innerHTML = telaRanking();
+    return;
+  }
+  if (aba === "mesclas") {
+    const k = mergeEscopo + "|" + agenteSel;
+    if (!mergeDados || mergeKey !== k) {
+      $("painel").innerHTML = `<div class="empty">Carregando mesclas…</div>`;
+      carregarMesclas();
+      return;
+    }
+    $("painel").innerHTML = telaMesclas();
+    return;
+  }
+
+  if (!dados) return;
+  const r = dados.resumo;
+  $("nAtivos").textContent = r.ativos;
+  $("nCrit").textContent = r.criticos;
+  $("nAten").textContent = r.atencao;
+  $("nMescla").textContent = r.mesclas;
+  $("nSla").textContent = r.sla;
+  const ps = (dados.pesquisa && dados.pesquisa.resumo) || {};
+  $("nSat").textContent = ps.pct_satisfeitos != null ? ps.pct_satisfeitos + "%" : (ps.total ? ps.total : 0);
+  $("lSat").textContent = ps.total
+    ? `Satisfação (${ps.satisfeitos} sim / ${ps.insatisfeitos} não)`
+    : "Satisfação";
+  $("cSat").textContent = `(${ps.total || 0})`;
+  if (dados.pendencias) $("cPend").textContent = `(${(dados.pendencias.todos && dados.pendencias.todos.length) || 0})`;
+  const ag = dados.agenda;
+  if ($("mResolvidos")) $("mResolvidos").textContent = ag && ag.resumo ? ag.resumo.resolvidos : (dados.pendencias?0:0);
+  if ($("mInteragiu")) $("mInteragiu").textContent = ag && ag.resumo ? ag.resumo.interagiu : 0;
+  if ($("mAtivos2")) $("mAtivos2").textContent = r.ativos;
+  if ($("m1a")) {
+    const pr = (dados.pendencias && dados.pendencias.resumo) || {};
+    $("m1a").textContent = pr.primeira_acao_media != null
+      ? `${pr.primeira_acao_media}h (mediana ${pr.primeira_acao_mediana}h, n=${pr.primeira_acao_total})`
+      : "–";
+  }
+  $("cAgenda").textContent = ag ? `(${(ag.resumo && ag.resumo.resolvidos) || 0} resolvidos)` : "";
+  $("cCrit").textContent = `(${r.criticos})`;
+  $("cAten").textContent = `(${r.atencao})`;
+  $("cMescla").textContent = `(${r.mesclas})`;
+  $("cSla").textContent = `(${r.sla})`;
+  $("cOk").textContent = `(${r.ok})`;
+
+  const d = new Date(dados.gerado_em);
+  $("ultima").textContent = (dados.origem === "api" ? "Atualizado agora: " : "Cache de: ")
+    + d.toLocaleString("pt-BR")
+    + (dados.pesquisa_cache ? " • pesquisa do cache" : "");
+  const bin=$("bannerInsat");
+  if(bin){
+    const ps=(dados.pesquisa&&dados.pesquisa.resumo)||{};
+    const ins=ps.insatisfeitos||0;
+    const itens=(dados.pesquisa&&dados.pesquisa.itens)||[];
+    const primeiro=itens.find(x=>x.insatisfeito);
+    const web=(dados.movidesk_web||"https://faturagil.movidesk.com").replace(/\/$/,"");
+    if(ins>0){
+      const link=primeiro?` <a href="${web}/Ticket/Edit/${primeiro.ticket}" target="_blank" rel="noopener" style="color:#a00;font-weight:600;text-decoration:underline">Abrir #${primeiro.ticket} no Movidesk</a>`:"";
+      bin.innerHTML=`<div style="background:#fee;border:1px solid #f88;padding:8px 12px;border-radius:8px">⚠️ ${ins} resposta(s) insatisfeita(s) nos últimos 365 dias${link}</div>`;
+    } else bin.innerHTML="";
+  }
+
+  let html = "";
+  popularServicos();
+  if (aba === "criticos") html = tabelaTickets(filtrarServico(dados.criticos));
+  else if (aba === "agenda") html = tabelaAgenda(dados.agenda);
+  else if (aba === "pendencias") html = tabelaPendencias(dados.pendencias);
+  else if (aba === "kanban") html = tabelaKanban(dados.pendencias && dados.pendencias.kanban, dados.pendencias);
+  else if (aba === "atencao") html = tabelaTickets(filtrarServico(dados.atencao));
+  else if (aba === "mesclas") html = tabelaMesclas(dados.mesclas);
+  else if (aba === "pesquisa") html = tabelaPesquisa(dados.pesquisa && dados.pesquisa.itens, dados.pesquisa && dados.pesquisa.resumo);
+  else if (aba === "sla") html = tabelaSla(filtrarServico(dados.sla));
+  else if (aba === "ok") html = tabelaTickets(filtrarServico(dados.ok));
+  else if (aba === "ranking") html = telaRanking();
+  else if (aba === "acoes") {
+    html = dados.acoes.length
+      ? `<ol class="acoes">${dados.acoes.map(a => `<li>${esc(a)}</li>`).join("")}</ol>`
+      : `<div class="empty">Nenhuma ação urgente.</div>`;
+  }
+  const focoBusca = document.activeElement && document.activeElement.id === "buscaPend"
+    ? document.activeElement.selectionStart : null;
+  $("painel").innerHTML = html;
+  if (focoBusca !== null) {
+    const inp = document.getElementById("buscaPend");
+    if (inp) { inp.focus(); try { inp.setSelectionRange(focoBusca, focoBusca); } catch (e) {} }
+  }
+}
+
+function telaDuvidas() {
+  const web = ((dados && dados.movidesk_web) || "https://faturagil.movidesk.com").replace(/\/$/, "");
+  const btn = "padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;cursor:pointer;background:#fff";
+  let html = `<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px">
+    <div style="font-weight:600;margin-bottom:6px">Perguntar ao histórico</div>
+    <div class="muted" style="font-size:12px;margin-bottom:8px">Busca local nos tickets já resolvidos (sem IA). Ex.: "impressora não imprime", "nota fiscal rejeitada", "esqueci a senha".</div>
+    <input id="buscaHist" value="${esc(histQuery)}" placeholder="Digite palavras-chave da dúvida…" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:min(460px,90%)">
+    <button id="btnBuscarHist" style="${btn}">Buscar</button>
+    <button id="btnHistCompleto" style="${btn}">Indexar histórico completo (365 dias)</button>
+    <div class="muted" id="histInfo" style="font-size:12px;margin-top:8px">${esc(histMsg)}</div>
+  </div>`;
+  if (histItens) {
+    if (!histItens.length) {
+      html += `<div class="empty">Nenhum ticket resolvido parecido encontrado no índice local.</div>`;
+    } else {
+      html += `<table><thead><tr><th>Ticket</th><th>Assunto</th><th>Cliente</th><th>Canal</th><th>Serviço</th><th>Atendente</th><th>Resolvido</th><th>Score</th><th></th></tr></thead><tbody>`;
+      for (const it of histItens) {
+        const det = histAcoes[it.ticket];
+        html += `<tr>
+          <td><a href="${web}/Ticket/Edit/${it.ticket}" target="_blank" rel="noopener">#${it.ticket}</a></td>
+          <td>${esc(it.assunto)}</td>
+          <td>${esc(it.cliente)}</td>
+          <td>${canalTag(it)}</td>
+          <td class="muted">${esc(it.servico)}</td>
+          <td>${esc(it.owner)}</td>
+          <td class="muted">${esc(it.resolvido_em)}</td>
+          <td>${it.score}${it.similaridade >= 0.6 ? ` <span class="muted">(${it.similaridade})</span>` : ""}</td>
+          <td><button class="btnVerAcoes" data-id="${it.ticket}" style="${btn};padding:4px 8px">Ver ações</button> <button class="btnSolucao" data-id="${it.ticket}" style="${btn};padding:4px 8px${it.tem_solucao ? ";background:#e8f5e9" : ""}">Solução pronta</button></td>
+        </tr>`;
+        if (det) {
+          html += `<tr><td colspan="9" style="background:#fafafa">${det}</td></tr>`;
+        }
+        const sol = solucoes[it.ticket];
+        if (sol) {
+          html += `<tr><td colspan="9" style="background:#f0fdf4">${renderSolucao(sol, web)}</td></tr>`;
+        }
+      }
+      html += `</tbody></table>`;
+    }
+  }
+  return html;
+}
+
+async function buscarHist() {
+  const inp = $("buscaHist");
+  histQuery = inp ? inp.value.trim() : "";
+  if (!histQuery) { histMsg = "Digite algo para buscar."; render(); return; }
+  histMsg = "Buscando…"; render();
+  try {
+    const r = await fetch("/api/historico?q=" + encodeURIComponent(histQuery));
+    const j = await r.json();
+    if (j.erro) throw new Error(j.erro);
+    histItens = j.itens || [];
+    histAcoes = {};
+    histMsg = `${histItens.length} resultado(s). Índice local: ${j.total_indice} tickets resolvidos. Termos: ${(j.termos || []).join(", ")}`;
+  } catch (e) {
+    histMsg = "Erro: " + e;
+  }
+  render();
+}
+
+async function verAcoes(id) {
+  histAcoes[id] = "Carregando ações…";
+  render();
+  try {
+    const r = await fetch("/api/acoes?id=" + encodeURIComponent(id));
+    const j = await r.json();
+    if (j.erro) throw new Error(j.erro);
+    const acoes = j.acoes || [];
+    histAcoes[id] = acoes.length
+      ? `<div style="max-height:340px;overflow:auto"><table style="margin:0"><tbody>${acoes.map(a => `<tr><td class="muted" style="white-space:nowrap;vertical-align:top">${esc(a.data)}<br>${a.interno ? "(nota interna)" : "(público)"}</td><td style="vertical-align:top"><b>${esc(a.autor)}</b><br><span style="white-space:pre-wrap">${esc(a.descricao).slice(0, 1500)}</span></td></tr>`).join("")}</tbody></table></div>`
+      : "<span class='muted'>Sem ações registradas.</span>";
+  } catch (e) {
+    histAcoes[id] = "<span style='color:#a00'>Erro: " + esc(e.message || e) + "</span>";
+  }
+  render();
+}
+
+function renderSolucao(sol, web) {
+  const bloco = (titulo, item, cor) => {
+    if (!item) return "";
+    return `<div style="margin:6px 0"><b style="color:${cor}">${titulo}</b>
+      <button class="btnCopiarSol" data-txt="${esc(item.texto)}" style="padding:2px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;background:#fff;margin-left:6px">Copiar</button>
+      <div class="muted" style="font-size:12px">${esc(item.autor)} • ${esc(item.data)}</div>
+      <div style="white-space:pre-wrap;font-size:13px;margin-top:4px">${esc(item.texto).slice(0, 2000)}</div></div>`;
+  };
+  const partes = [
+    bloco("Resposta pronta (última resposta pública):", sol.resposta, "#15803d"),
+    bloco("Última nota interna:", sol.observacao, "#6b7280"),
+  ].filter(Boolean);
+  return partes.length ? partes.join("") : "<span class='muted'>Sem resposta pública/nota registrada.</span>";
+}
+
+async function verSolucao(id) {
+  solucoes[id] = { resposta: null, observacao: null, _carregando: true };
+  render();
+  try {
+    const r = await fetch("/api/solucao?id=" + encodeURIComponent(id));
+    const j = await r.json();
+    if (j.erro) throw new Error(j.erro);
+    solucoes[id] = j;
+  } catch (e) {
+    solucoes[id] = { resposta: { texto: "Erro: " + (e.message || e), autor: "", data: "" }, observacao: null };
+  }
+  render();
+}
+
+async function indexarHistorico() {
+  histMsg = "Indexando todo o histórico (365 dias)… pode levar 1–2 min por causa do limite da API.";
+  render();
+  try {
+    const r = await fetch("/api/historico/completo", { method: "POST" });
+    const j = await r.json();
+    if (j.erro) throw new Error(j.erro);
+    histMsg = `Histórico completo indexado: ${j.total} tickets resolvidos (salvo em ${j.salvo_em}).`;
+  } catch (e) {
+    histMsg = "Erro ao indexar: " + e;
+  }
+  render();
+}
+
+async function carregarRanking() {
+  try {
+    const r = await fetch("/api/ranking");
+    ranking = await r.json();
+    if (ranking.erro) { banner(ranking.erro, "err"); ranking = null; return; }
+  } catch (e) {
+    banner("Falha ao carregar ranking: " + e, "err");
+    ranking = null;
+  }
+  render();
+}
+
+function barraPct(pct) {
+  if (pct == null) return `<span class="muted">—</span>`;
+  const cor = pct >= 80 ? "#15803d" : pct >= 60 ? "#b45309" : "#b91c1c";
+  return `<span style="display:inline-block;min-width:120px;vertical-align:middle"><span style="display:inline-block;width:70px;height:9px;background:#eee;border-radius:5px;overflow:hidden;vertical-align:middle"><span style="display:block;height:100%;width:${Math.max(0, Math.min(100, pct))}%;background:${cor}"></span></span> ${pct}%</span>`;
+}
+
+function telaRanking() {
+  if (!ranking || !ranking.itens || !ranking.itens.length) return `<div class="empty">Sem dados de ranking. Clique em Consultar (com um atendente específico em cache).</div>`;
+  const linhas = ranking.itens.map(p => `<tr>
+    <td>${esc(p.nome)}${p.email === agenteSel ? ' <span class="pill blue">atual</span>' : ""}</td>
+    <td style="text-align:right"><b>${p.ativos}</b></td>
+    <td style="text-align:right">${p.criticos ? `<span class="pill red">${p.criticos}</span>` : "0"}</td>
+    <td style="text-align:right">${p.tempo_medio_parado != null ? esc(p.tempo_medio_parado) + "h" : '<span class="muted">—</span>'}</td>
+    <td style="text-align:right">${p.resolvidos}</td>
+    <td>${barraPct(p.fcr_pct)} <span class="muted">(${p.fcr}/${p.resolvidos})</span></td>
+    <td style="text-align:right">${p.reabertos ? `<span class="pill amber">${p.reabertos}</span>` : "0"}</td>
+    <td>${barraPct(p.csat_pct)} <span class="muted">(${p.sat}👍 / ${p.insat}👎)</span></td>
+    <td style="text-align:right">${p.nps != null ? p.nps : '<span class="muted">—</span>'}</td>
+  </tr>`).join("");
+  return `<p class="muted" style="margin:0 0 10px;font-size:13px">Comparativo por atendente — usa os caches salvos por atendente. "tempo médio parado" = horas desde a última ação do ticket ativo atual (quanto menor, melhor). FCR e CSAT são dos tickets resolvidos/satisfação no período.</p>
+  <table>
+    <thead><tr><th>Atendente</th><th style="text-align:right">Ativos</th><th style="text-align:right">Críticos</th><th style="text-align:right">Tempo médio parado</th><th style="text-align:right">Resolvidos (90d)</th><th>FCR (1º contato)</th><th style="text-align:right">Reabertos</th><th>CSAT</th><th style="text-align:right">NPS</th></tr></thead>
+    <tbody>${linhas}</tbody></table>`;
+}
+
+async function carregarPlantao() {
+  try {
+    const r = await fetch("/api/plantao");
+    plantao = await r.json();
+    if (plantao.erro) { banner(plantao.erro, "err"); plantao = null; return; }
+  } catch (e) {
+    banner("Falha ao carregar plantão: " + e, "err");
+    plantao = null;
+  }
+  if ($("cPlantao") && plantao) $("cPlantao").textContent = `(${(plantao.novos || []).length})`;
+  atualizarCabecalho();
+  render();
+}
+
+function escalaParaTexto(porData) {
+  return Object.keys(porData || {}).sort().map(d => `${d} = ${porData[d]}`).join("\n");
+}
+
+function textoParaEscala(txt) {
+  const out = {};
+  for (const linha of (txt || "").split("\n")) {
+    const m = linha.split("=");
+    if (m.length < 2) continue;
+    const data = m[0].trim();
+    const email = m.slice(1).join("=").trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(data) && email) out[data] = email;
+  }
+  return out;
+}
+
+function telaPlantao() {
+  const p = plantao || {};
+  const h3 = "font-size:13px;margin:10px 0 4px";
+  const btn = "padding:7px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;cursor:pointer;background:#fff";
+  const inp = "padding:6px 9px;border:1px solid var(--border);border-radius:6px;font-size:13px";
+  const hojeNome = p.hoje_email ? nomeAgente(p.hoje_email) : "(ninguém definido)";
+  let html = `<div style="background:#eef6ff;border:1px solid #b9d8ff;border-radius:10px;padding:12px;margin-bottom:12px">
+      <b>Plantão de hoje (${esc(p.hoje || "")}):</b> ${esc(hojeNome)}</div>`;
+
+  html += `<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px">
+    <div style="font-weight:600">Escala do plantão</div>
+    <div class="muted" style="font-size:12px;margin:4px 0 8px">Uma linha por dia: <code>AAAA-MM-DD = email</code>. Quem estiver definido no dia atende os tickets novos do suporte.</div>
+    <textarea id="plantaoEscala" style="width:100%;min-height:130px;font-family:monospace;font-size:12px;padding:8px;border:1px solid var(--border);border-radius:6px">${esc(escalaParaTexto(p.por_data))}</textarea>
+    <div style="margin-top:8px"><input id="plantaoNota" value="${esc(p.nota || "")}" placeholder="Observação (opcional)" style="${inp};width:min(420px,90%)">
+    <button id="btnSalvarPlantao" style="${btn}">Salvar escala</button></div>
+    <div style="margin-top:14px;border-top:1px dashed var(--border);padding-top:10px">
+      <div style="${h3}">Gerar escala automática</div>
+      <input type="date" id="plantaoInicio" value="${esc(p.hoje || "")}" style="${inp}">
+      <select id="plantaoPace" style="${inp}">
+        <option value="1">1 pessoa por dia</option>
+        <option value="2">Dias alternados (dia sim / dia não)</option>
+      </select>
+      <input id="plantaoOrdem" placeholder="emails na ordem, separados por vírgula" value="${esc(agentes.map(a => a.email).join(', '))}" style="${inp};width:min(460px,90%)">
+      <button id="btnGerarPlantao" style="${btn}">Gerar (60 dias)</button>
+    </div>
+  </div>`;
+
+  const novos = p.novos || [];
+  html += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><b>Tickets novos hoje</b> <span class="muted">(${novos.length}; índice de ${p.total_ativos_indice || 0} ativos conhecidos)</span></div>`;
+  if (!novos.length) {
+    html += `<div class="empty">Nenhum ticket novo hoje no índice local. Clique em "Consultar" para atualizar (aba "Todos os atendentes" carrega todos).</div>`;
+  } else {
+    const web = ((dados && dados.movidesk_web) || "https://faturagil.movidesk.com").replace(/\/$/, "");
+    html += `<table><thead><tr><th>Ticket</th><th>Hora</th><th>Assunto</th><th>Cliente</th><th>Responsável</th><th>Status</th></tr></thead><tbody>`;
+    for (const n of novos) {
+      const cor = n.do_plantao ? "background:#eaffea" : (n.sem_responsavel ? "background:#fff8e1" : "");
+      html += `<tr style="${cor}">
+        <td><a href="${web}/Ticket/Edit/${n.ticket}" target="_blank" rel="noopener">#${n.ticket}</a></td>
+        <td class="muted">${esc(n.criado_em)}</td>
+        <td>${esc(n.assunto)}</td>
+        <td>${esc(n.cliente)}</td>
+        <td>${esc(n.owner)}${n.do_plantao ? ' <span class="badge" style="background:#d8f5d8">plantão</span>' : ''}${n.sem_responsavel ? ' <span class="badge" style="background:#ffe9b3">fila</span>' : ''}</td>
+        <td class="muted">${esc(n.status)}</td>
+      </tr>`;
+    }
+    html += `</tbody></table>`;
+  }
+  return html;
+}
+
+async function salvarPlantao(porData, nota) {
+  try {
+    const r = await fetch("/api/plantao", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ por_data: porData, nota: nota }),
+    });
+    const j = await r.json();
+    if (j.erro) throw new Error(j.erro);
+    plantao = j;
+    banner("Escala do plantão salva.", "info");
+  } catch (e) {
+    banner("Erro ao salvar plantão: " + e.message, "err");
+  }
+  render();
+}
+
+function gerarPlantao() {
+  const inicio = ($("plantaoInicio") || {}).value;
+  const pace = parseInt(($("plantaoPace") || {}).value || "1", 10);
+  const ordem = ($("plantaoOrdem") || {}).value.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
+  if (!inicio || !ordem.length) { banner("Informe a data inicial e a ordem dos atendentes.", "err"); return; }
+  const porData = {};
+  const d = new Date(inicio + "T12:00:00");
+  let i = 0;
+  for (let n = 0; n < 60; n++) {
+    const iso = d.toISOString().slice(0, 10);
+    porData[iso] = ordem[i % ordem.length];
+    i++;
+    d.setDate(d.getDate() + pace);
+  }
+  salvarPlantao(porData, ($("plantaoNota") || {}).value || "");
+}
+
+async function carregarMesclas() {
+  const k = mergeEscopo + "|" + agenteSel;
+  try {
+    const r = await fetch("/api/mesclas?escopo=" + encodeURIComponent(mergeEscopo) + "&agente=" + encodeURIComponent(agenteSel));
+    const j = await r.json();
+    if (j.erro) throw new Error(j.erro);
+    mergeDados = j;
+    mergeKey = k;
+  } catch (e) {
+    banner("Falha ao carregar mesclas: " + e, "err");
+  }
+  if ($("cMescla")) $("cMescla").textContent = `(${(mergeDados && mergeDados.total) || 0})`;
+  render();
+}
+
+function telaMesclas() {
+  const m = mergeDados || { itens: [], total: 0 };
+  const web = ((dados && dados.movidesk_web) || "https://faturagil.movidesk.com").replace(/\/$/, "");
+  const btn = "padding:5px 9px;border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;background:#fff";
+  const ativo = "background:var(--blue);color:#fff;border-color:var(--blue)";
+  let html = `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+    <span class="muted" style="font-size:13px">Escopo:</span>
+    <button class="btnEscopoMescla" data-escopo="atual" style="${btn};${mergeEscopo === "atual" ? ativo : ""}">Só ${esc(nomeAgente(agenteSel))}</button>
+    <button class="btnEscopoMescla" data-escopo="todos" style="${btn};${mergeEscopo === "todos" ? ativo : ""}">Todos os atendentes</button>
+    <label class="muted" style="font-size:12px"><input type="checkbox" id="chkMesclaConcluidas" ${mergeMostrarConcluidas ? "checked" : ""}> mostrar mescladas/ignoradas</label>
+    <span class="muted" style="font-size:12px">Fila local: marque o que já foi mesclado no Movidesk (a API não mescla automaticamente).</span>
+  </div>`;
+  let itens = (m.itens || []).filter(c => mergeMostrarConcluidas || !c.status);
+  if (!itens.length) {
+    html += `<div class="empty">Nenhum candidato a mescla${mergeMostrarConcluidas ? "" : " pendente"}.${mergeEscopo === "atual" ? " Tente o escopo Todos os atendentes." : ""}</div>`;
+    return html;
+  }
+  html += `<table><thead><tr><th>Ticket A</th><th>Ticket B</th><th>Cliente</th><th>Motivo</th><th>Ação sugerida</th><th>Status</th><th></th></tr></thead><tbody>`;
+  for (const c of itens) {
+    const st = c.status === "mesclado" ? '<span class="pill green">mesclado</span>'
+      : c.status === "ignorado" ? '<span class="pill" style="background:#eee">ignorado</span>' : '<span class="muted">pendente</span>';
+    html += `<tr style="${c.status ? "opacity:.6" : ""}">
+      <td><a href="${web}/Ticket/Edit/${c.ticket_a}" target="_blank" rel="noopener"><b>#${c.ticket_a}</b></a><br><small class="muted">${esc(c.assunto_a || "")}</small></td>
+      <td><a href="${web}/Ticket/Edit/${c.ticket_b}" target="_blank" rel="noopener"><b>#${c.ticket_b}</b></a><br><small class="muted">${esc(c.assunto_b || "")}</small></td>
+      <td>${esc(c.cliente)}</td>
+      <td>${esc(c.motivo)}<br><span class="muted" style="font-size:12px">sim. ${c.similaridade} • A: ${esc(c.service_a || "—")} • B: ${esc(c.service_b || "—")}</span></td>
+      <td>${esc(c.acao)} (pai #${c.pai})</td>
+      <td>${st}</td>
+      <td style="white-space:nowrap">
+        <button class="btnMescla" data-chave="${c.chave}" data-status="mesclado" style="${btn}">Mesclado</button>
+        <button class="btnMescla" data-chave="${c.chave}" data-status="ignorado" style="${btn}">Ignorar</button>
+        ${c.status ? `<button class="btnMescla" data-chave="${c.chave}" data-status="" style="${btn}">Limpar</button>` : ""}
+      </td>
+    </tr>`;
+  }
+  html += `</tbody></table>`;
+  return html;
+}
+
+async function marcarMescla(chave, status) {
+  try {
+    const r = await fetch("/api/mesclas", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chave: chave, status: status }),
+    });
+    const j = await r.json();
+    if (j.erro) throw new Error(j.erro);
+    const item = (mergeDados.itens || []).find(c => c.chave === chave);
+    if (item) item.status = status;
+  } catch (e) {
+    banner("Erro ao salvar fila de mescla: " + e.message, "err");
+  }
+  render();
+}
+
+function banner(msg, tipo) {
+  const b = $("banner");
+  if (!msg) { b.style.display = "none"; return; }
+  b.textContent = msg;
+  b.className = tipo;
+  b.style.display = "block";
+}
+
+async function carregarCache() {
+  try {
+    const r = await fetch("/api/dados?agente=" + encodeURIComponent(agenteSel));
+    const j = await r.json();
+    if (j.erro) { banner(j.erro, "err"); return; }
+    if (j.vazio) { $("painel").innerHTML = `<div class="empty">${esc(j.mensagem)}</div>`; return; }
+    dados = j;
+    render();
+  } catch (e) {
+    banner("Falha ao ler cache local: " + e, "err");
+  }
+}
+
+async function consultar(forcar) {
+  const btn = $("btnConsultar");
+  const forcado = !!forcar;
+  btn.disabled = true;
+  $("spin").style.display = "inline-block";
+  $("btnTxt").textContent = forcado ? "Atualizando tudo…" : "Consultando…";
+  banner((forcado
+    ? "Consultando a API do Movidesk com pesquisa de satisfação atualizada… "
+    : "Consultando a API do Movidesk (pode levar alguns segundos)… ") + "[" + nomeAgente(agenteSel) + "]", "info");
+  try {
+    const qs = "?agente=" + encodeURIComponent(agenteSel) + (forcado ? "&forcar=1" : "");
+    const r = await fetch("/api/consultar" + qs, { method: "POST" });
+    const j = await r.json();
+    if (j.erro) throw new Error(j.erro);
+    dados = j;
+    mergeDados = null;
+    ranking = null;
+    banner("");
+    render();
+  } catch (e) {
+    banner("Erro na consulta: " + e.message, "err");
+  } finally {
+    btn.disabled = false;
+    $("spin").style.display = "none";
+    $("btnTxt").textContent = "Consultar";
+  }
+}
+
+$("btnConsultar").addEventListener("click", () => consultar(false));
+$("btnForcar").addEventListener("click", () => consultar(true));
+$("selAgente").addEventListener("change", async (e) => {
+  agenteSel = e.target.value;
+  localStorage.setItem("agenteSel", agenteSel);
+  atualizarCabecalho();
+  dados = null;
+  mergeDados = null;
+  ranking = null;
+  await carregarCache();
+});
+
+$("selServico").addEventListener("change", (e) => {
+  servicoSel = e.target.value;
+  localStorage.setItem("servicoSel", servicoSel);
+  render();
+});
+
+$("painel").addEventListener("click", async (e) => {
+  const thOrd = e.target.closest && e.target.closest("th.ord");
+  if (thOrd) {
+    const campo = thOrd.dataset.campo;
+    if (ordemSat.campo === campo) ordemSat.dir = ordemSat.dir === "asc" ? "desc" : "asc";
+    else { ordemSat.campo = campo; ordemSat.dir = campo === "data_iso" || campo === "ticket" ? "desc" : "asc"; }
+    render();
+    return;
+  }
+  if (e.target.id === "btnCopiar" && dados && dados.agenda) {
+    const txt = (document.getElementById("agendaTexto") && document.getElementById("agendaTexto").value) || dados.agenda.texto;
+    try { await navigator.clipboard.writeText(txt); e.target.textContent = "Copiado!"; } catch(err) {
+      const ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); e.target.textContent="Copiado!";
+    }
+    setTimeout(()=>{e.target.textContent="Copiar texto da agenda";},2000);
+    return;
+  }
+  if (e.target.id === "btnRestaurarModelo" && modeloAgendaPadrao && dados && dados.agenda) {
+    const ta=document.getElementById("agendaTexto");
+    if (ta) {
+      ta.value = modeloAgendaPadrao;
+      localStorage.removeItem("agendaTexto_"+dados.agenda.data);
+    }
+    return;
+  }
+  if (e.target.id === "btnBuscarHist") { await buscarHist(); return; }
+  if (e.target.id === "btnHistCompleto") { await indexarHistorico(); return; }
+  if (e.target.id === "btnSalvarPlantao") {
+    const ta = $("plantaoEscala");
+    await salvarPlantao(textoParaEscala(ta ? ta.value : ""), ($("plantaoNota") || {}).value || "");
+    return;
+  }
+  if (e.target.id === "btnGerarPlantao") { gerarPlantao(); return; }
+  const btnEsc = e.target.closest && e.target.closest(".btnEscopoMescla");
+  if (btnEsc && btnEsc.dataset.escopo !== mergeEscopo) {
+    mergeEscopo = btnEsc.dataset.escopo;
+    mergeDados = null;
+    render();
+    return;
+  }
+  const btnM = e.target.closest && e.target.closest(".btnMescla");
+  if (btnM) { await marcarMescla(btnM.dataset.chave, btnM.dataset.status); return; }
+  const btnVer = e.target.closest && e.target.closest(".btnVerAcoes");
+  if (btnVer) { await verAcoes(btnVer.dataset.id); return; }
+  const btnSol = e.target.closest && e.target.closest(".btnSolucao");
+  if (btnSol) { await verSolucao(btnSol.dataset.id); return; }
+  const btnCop = e.target.closest && e.target.closest(".btnCopiarSol");
+  if (btnCop) {
+    try { await navigator.clipboard.writeText(btnCop.dataset.txt || ""); btnCop.textContent = "Copiado!"; setTimeout(() => { btnCop.textContent = "Copiar"; }, 1500); } catch (err) {}
+    return;
+  }
+});
+
+$("painel").addEventListener("keydown", (e) => {
+  if (e.target.id === "buscaHist" && e.key === "Enter") { e.preventDefault(); buscarHist(); }
+});
+
+$("painel").addEventListener("change", (e) => {
+  if (e.target.id === "chkMesclaConcluidas") { mergeMostrarConcluidas = e.target.checked; render(); }
+});
+
+document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
+  document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+  t.classList.add("active");
+  aba = t.dataset.tab;
+  history.replaceState(null, "", "#" + aba);
+  render();
+}));
+
+const abaHash = location.hash.slice(1);
+if (abaHash && document.querySelector('.tab[data-tab="' + abaHash + '"]')) {
+  aba = abaHash;
+  document.querySelectorAll(".tab").forEach(x => x.classList.toggle("active", x.dataset.tab === abaHash));
+}
+(async () => {
+  await carregarAgentes();
+  await carregarCache();
+})();
+
+</script>
+</body>
+</html>
