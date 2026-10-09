@@ -113,6 +113,9 @@ _historico_job: dict = {"ativo": False}
 _historico_lock = threading.Lock()
 _STATUS_HISTORICO = ("Resolved", "Closed", "Canceled")
 
+_acoes_job: dict = {"ativo": False}
+_acoes_lock = threading.Lock()
+
 
 def _indexar_historico(desde: datetime, ate: datetime) -> None:
     """Indexa, em background, todos os tickets resolvidos no intervalo [desde, ate),
@@ -177,6 +180,87 @@ def _iniciar_indexacao(desde: datetime, ate: datetime) -> dict:
     return {"ok": True, "desde": desde.strftime("%Y-%m-%d"), "ate": ate.strftime("%Y-%m-%d")}
 
 
+def _flush_acoes(lote: dict) -> None:
+    from macros import salvar_lote
+
+    salvar_lote(lote)
+
+
+def _indexar_acoes() -> None:
+    """Busca as ações de cada ticket ainda sem registro no índice de macros
+    (1 requisição por ticket, respeitando o limite de 10 req/min)."""
+    from macros import candidatos_para_indexar, registrar_acoes
+
+    try:
+        from api_client import MovideskClient
+
+        client = MovideskClient()
+    except Exception as exc:
+        with _acoes_lock:
+            _acoes_job.update({"ativo": False, "erro": str(exc)})
+        log.exception("Falha ao iniciar indexacao de acoes")
+        return
+
+    try:
+        candidatos = candidatos_para_indexar()
+    except Exception as exc:
+        with _acoes_lock:
+            _acoes_job.update({"ativo": False, "erro": str(exc)})
+        return
+
+    total = len(candidatos)
+    processados = erros = 0
+    lote: dict[str, dict] = {}
+    with _acoes_lock:
+        _acoes_job.update({"ativo": True, "total": total, "processados": 0,
+                           "erros": 0, "pos": 0, "atual": None, "erro": None})
+    for pos, c in enumerate(candidatos, 1):
+        with _acoes_lock:
+            if not _acoes_job.get("ativo"):
+                if lote:
+                    _flush_acoes(lote)
+                log.info("Indexacao de acoes cancelada")
+                return
+            _acoes_job.update({"pos": pos, "atual": c["id"], "processados": processados,
+                               "erros": erros})
+        try:
+            acts = client.get_ticket_actions(c["id"])
+            entry = registrar_acoes(
+                c["id"], acts,
+                meta={"cliente": c["cliente"], "assunto": c["assunto"]},
+                salvar=False,
+            )
+            lote[str(c["id"])] = entry
+            processados += 1
+            if len(lote) >= 20:
+                _flush_acoes(lote)
+                lote = {}
+        except Exception as exc:
+            erros += 1
+            log.warning("Erro ao indexar acoes do ticket %s: %s", c["id"], exc)
+    if lote:
+        _flush_acoes(lote)
+    with _acoes_lock:
+        _acoes_job.update({"ativo": False, "pos": total, "atual": None,
+                           "processados": processados, "erros": erros,
+                           "terminado_em": datetime.now().isoformat(timespec="seconds")})
+    log.info("Indexacao de acoes concluida: %d (%d erros)", processados, erros)
+
+
+def _iniciar_indexacao_acoes() -> dict:
+    with _acoes_lock:
+        if _acoes_job.get("ativo"):
+            return {"erro": "Ja existe uma indexacao de acoes em andamento."}
+        _acoes_job.clear()
+        _acoes_job.update({
+            "ativo": True, "erro": None, "total": 0, "processados": 0,
+            "erros": 0, "pos": 0, "atual": None,
+            "iniciado_em": datetime.now().isoformat(timespec="seconds"),
+        })
+    threading.Thread(target=_indexar_acoes, daemon=True).start()
+    return {"ok": True}
+
+
 def open_browser() -> None:
     threading.Timer(1.0, lambda: webbrowser.open(server_url())).start()
 
@@ -231,6 +315,39 @@ class Handler(BaseHTTPRequestHandler):
             from dados import build_mapa_horarios
 
             self._json(build_mapa_horarios())
+        elif path == "/api/macros":
+            from macros import estatisticas
+
+            payload = estatisticas()
+            with _acoes_lock:
+                payload["job"] = dict(_acoes_job)
+            self._json(payload)
+        elif path == "/api/macros/validar":
+            self._macro_validar(params)
+        elif path == "/api/macros/buscar":
+            from macros import buscar
+
+            q = (params.get("q") or "").strip()
+            if not q:
+                self._json({"erro": "informe q (trecho para buscar)"}, code=400)
+                return
+            self._json(buscar(q))
+        elif path == "/api/macros/status":
+            from macros import candidatos_para_indexar, carregar_indice
+
+            with _acoes_lock:
+                job = dict(_acoes_job)
+            indice = carregar_indice()
+            try:
+                restantes = len(candidatos_para_indexar())
+            except Exception:
+                restantes = None
+            self._json({
+                "job": job,
+                "tickets_indexados": len(indice.get("tickets") or {}),
+                "salvo_em": indice.get("salvo_em") or "",
+                "restantes": restantes,
+            })
         elif path == "/api/parecidos":
             from dados import build_parecidos
 
@@ -258,7 +375,8 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/ranking":
             from dados import build_ranking
 
-            self._json(build_ranking())
+            incluir_dev = (params.get("dev") or "").lower() in ("1", "true", "sim", "on")
+            self._json(build_ranking(incluir_dev=incluir_dev))
         elif path == "/api/solucao":
             self._solucao(params.get("id") or "")
         elif path == "/api/historico/status":
@@ -289,6 +407,7 @@ class Handler(BaseHTTPRequestHandler):
             from api_client import MovideskClient
 
             acts = MovideskClient().get_ticket_actions(tid)
+            self._registrar_no_indice(tid, acts)
             itens = []
             for a in acts:
                 d = parse_date(a.get("createdDate"))
@@ -305,6 +424,73 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"ticket": tid, "acoes": itens})
         except Exception as exc:
             log.exception("Falha ao buscar acoes do ticket %s", ticket_id)
+            self._json({"erro": str(exc)}, code=502)
+
+    @staticmethod
+    def _registrar_no_indice(tid: int, acts: list[dict], meta: dict | None = None) -> dict | None:
+        """Guarda as ações buscadas ao vivo no índice de macros. Retorna a entry (ou None)."""
+        if not acts:
+            return None
+        try:
+            from macros import meta_local, registrar_acoes
+
+            m = meta or {}
+            if not m.get("cliente"):
+                m = meta_local(tid)
+            return registrar_acoes(tid, acts, meta=m)
+        except Exception as exc:
+            log.warning("Falha ao registrar acoes do ticket %s no indice: %s", tid, exc)
+            return None
+
+    def _macro_validar(self, params: dict):
+        """Confere se as macros do catálogo aparecem nas ações de um ticket.
+
+        Padrão: busca ao vivo (1 requisição) e atualiza o índice; use vivo=0 para
+        responder só com o que já está no cache/índice.
+        """
+        try:
+            tid = int(params.get("id") or "")
+        except (TypeError, ValueError):
+            self._json({"erro": "id invalido"}, code=400)
+            return
+        vivo = (params.get("vivo") or "1").lower() not in ("0", "false", "nao", "não")
+        try:
+            from macros import analisar_entrada, coletar_acoes
+
+            local = coletar_acoes().get(str(tid))
+            entry, fonte = None, None
+            if local and not vivo:
+                entry, fonte = local, "cache"
+            else:
+                try:
+                    from api_client import MovideskClient
+
+                    acts = MovideskClient().get_ticket_actions(tid)
+                    if acts:
+                        meta = {
+                            "cliente": (local or {}).get("cliente") or "",
+                            "assunto": (local or {}).get("assunto") or "",
+                        }
+                        entry = self._registrar_no_indice(tid, acts, meta)
+                        fonte = "vivo"
+                        if entry is None:
+                            from macros import _limpar_acao
+
+                            entry = {"cliente": meta["cliente"], "assunto": meta["assunto"],
+                                     "acoes": [_limpar_acao(a) for a in acts]}
+                    elif local:
+                        entry, fonte = local, "cache"
+                    else:
+                        entry, fonte = {"acoes": [], "cliente": "", "assunto": ""}, "vivo"
+                except Exception as exc:
+                    if local:
+                        entry, fonte = local, "cache"
+                    else:
+                        self._json({"erro": str(exc)}, code=502)
+                        return
+            self._json(analisar_entrada(str(tid), entry, fonte or ""))
+        except Exception as exc:
+            log.exception("Falha ao validar macros do ticket %s", params.get("id"))
             self._json({"erro": str(exc)}, code=502)
 
     def _solucao(self, ticket_id: str):
@@ -325,6 +511,7 @@ class Handler(BaseHTTPRequestHandler):
             from api_client import MovideskClient
 
             acts = MovideskClient().get_ticket_actions(tid)
+            self._registrar_no_indice(tid, acts)
             sol = montar_solucao(acts)
             sol["ticket"] = tid
             cache[key] = sol
@@ -393,6 +580,8 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"erro": str(exc)}, code=502)
 
     def _agentes(self):
+        from config import PLANTAO_ORDEM, papel_agente
+
         raw = load_cache_raw()
         agentes = raw.get("agentes") if isinstance(raw.get("agentes"), list) else []
         if not agentes:
@@ -406,7 +595,18 @@ class Handler(BaseHTTPRequestHandler):
                 log.warning("Falha ao listar atendentes: %s", exc)
         if AGENT_EMAIL and not any(a.get("email") == AGENT_EMAIL.lower() for a in agentes):
             agentes = [{"nome": AGENT_NAME or AGENT_EMAIL, "email": AGENT_EMAIL.lower()}] + agentes
-        self._json({"agentes": agentes, "default": AGENT_EMAIL.lower() or "*", "agente_nome": AGENT_NAME})
+        ordem_papel = {"suporte": 0, "dev": 1, "outros": 2}
+        agentes = [
+            {**a, "papel": papel_agente(a.get("email"))}
+            for a in agentes
+        ]
+        agentes.sort(key=lambda a: (ordem_papel.get(a["papel"], 3), (a.get("nome") or "").lower()))
+        self._json({
+            "agentes": agentes,
+            "default": AGENT_EMAIL.lower() or "*",
+            "agente_nome": AGENT_NAME,
+            "plantao_ordem": PLANTAO_ORDEM,
+        })
 
     def do_POST(self):
         path, _, query = self.path.partition("?")
@@ -416,6 +616,15 @@ class Handler(BaseHTTPRequestHandler):
             self._consultar(agente=agente, forcar="forcar" in params)
         elif path == "/api/historico/completo":
             self._historico_completo(params)
+        elif path == "/api/macros/indexar":
+            body = self._read_body()
+            if body.get("parar"):
+                with _acoes_lock:
+                    _acoes_job["ativo"] = False
+                    job = dict(_acoes_job)
+                self._json({"ok": True, "parando": True, "job": job})
+                return
+            self._json(_iniciar_indexacao_acoes())
         elif path == "/api/pesquisa":
             self._pesquisa(params)
         elif path == "/api/plantao":
