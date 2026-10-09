@@ -3,7 +3,7 @@ import json
 import sys
 import threading
 from contextvars import ContextVar
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -290,7 +290,14 @@ def build_payload(
 
     pesquisa = build_pesquisa(infos, resolved_raw or [], survey_raw or [])
     pendencias = build_pendencias(infos, now)
-    agenda = build_agenda(infos, resolved_raw or [], interagiu_raw or [], fora_raw or [], now)
+    agenda = build_agenda(
+        infos,
+        resolved_raw or [],
+        interagiu_raw or [],
+        fora_raw or [],
+        now,
+        agente_nome=_agent_display(agente_email or agente_atual()),
+    )
     for item in pesquisa["itens"]:
         if item["insatisfeito"]:
             acoes.append(
@@ -508,22 +515,22 @@ def build_agenda(
     interagiu_raw: list[dict],
     fora_raw: list[dict],
     now: datetime,
+    agente_nome: str | None = None,
 ) -> dict:
     from analyzer import build_ticket_info
+    from feriados import ultimo_dia_util_antes, dias_fechados_entre
 
     hoje = now.strftime("%Y-%m-%d")
     abertos = ("Resolved", "Closed", "Canceled")
+    tecnico = agente_nome or AGENT_NAME or "Não configurado"
 
-    def get_dia_base(dt: datetime) -> datetime:
-        cur = dt - timedelta(days=1)
-        while cur.weekday() in (5, 6):  # sab, dom
-            cur -= timedelta(days=1)
-        return cur
-
-    dia_base = get_dia_base(now)
+    dia_base_date = ultimo_dia_util_antes(now.date())
+    dia_base = datetime.combine(dia_base_date, time.min)
     dia_base_str = dia_base.strftime("%Y-%m-%d")
-    inicio = dia_base.replace(hour=0, minute=0, second=0, microsecond=0)
+    inicio = dia_base
     fim_exclusive = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    fechados = dias_fechados_entre(dia_base_date, fim_exclusive.date())
+    dias_cobertos = (fim_exclusive.date() - dia_base_date).days
 
     def entre_base_ate_ontem(v: str | None) -> bool:
         if not v or len(v) < 10:
@@ -577,7 +584,7 @@ def build_agenda(
         return t.raw.get("justification") or t.status
 
     linhas = [
-        f"TÉCNICO: {AGENT_NAME or 'Não configurado'} Data: {now.strftime('%d/%m/%Y')}",
+        f"TÉCNICO: {tecnico} Data: {now.strftime('%d/%m/%Y')}",
         "",
         "🚨 PLANTÃO: SIM",
         "",
@@ -609,10 +616,20 @@ def build_agenda(
 
     return {
         "data": now.strftime("%d/%m/%Y"),
+        "tecnico": tecnico,
         "texto": texto,
+        "periodo": {
+            "de": dia_base.strftime("%d/%m/%Y"),
+            "de_iso": dia_base_str,
+            "ate": (fim_exclusive - timedelta(days=1)).strftime("%d/%m/%Y"),
+            "ate_iso": (fim_exclusive - timedelta(days=1)).strftime("%Y-%m-%d"),
+            "dias": dias_cobertos,
+            "fechados": [d.strftime("%d/%m/%Y") for d in fechados],
+        },
         "resumo": {
             "resolvidos": len(resolvidos_base),
             "resolvidos_base_dia": dia_base_str,
+            "dias_cobertos": dias_cobertos,
             "em_atendimento": len(em_atendimento),
             "interagiu": len(interagiu),
             "parados": len(parados),
@@ -836,6 +853,14 @@ def _owner_label(raw: dict, email: str) -> str:
     if email == AGENT_EMAIL.lower() and AGENT_NAME:
         return AGENT_NAME
     return email
+
+
+def _agent_display(email: str | None) -> str:
+    email = (email or "").lower()
+    if email in ("", "*", "todos", "all"):
+        return "Todos os atendentes"
+    raw = load_cache_raw()
+    return _owner_label(raw, email) or AGENT_NAME or email
 
 
 def build_servicos() -> dict:
