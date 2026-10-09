@@ -1,0 +1,483 @@
+#!/usr/bin/env python3
+"""Servidor do painel Movidesk.
+
+Uso: clique no atalho da Área de Trabalho (ou rode `python3 painel/server.py`).
+Sobe em background se ainda não estiver rodando e abre o navegador.
+"""
+import json
+import logging
+import socket
+import subprocess
+import sys
+import threading
+import webbrowser
+from datetime import datetime
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+
+PAINEL_DIR = Path(__file__).resolve().parent
+BASE_DIR = PAINEL_DIR.parent
+sys.path.insert(0, str(BASE_DIR))
+sys.path.insert(0, str(PAINEL_DIR))
+
+from config import AGENT_EMAIL, AGENT_NAME, MOVIDESK_WEB_URL, PANEL_PORT, SURVEY_CACHE_HOURS  # noqa: E402
+from dados import load_cache_raw, save_cache_raw  # noqa: E402
+
+PORT = PANEL_PORT
+HOST = "127.0.0.1"
+INDEX_FILE = PAINEL_DIR / "index.html"
+LOG_FILE = PAINEL_DIR / "server.log"
+PID_FILE = PAINEL_DIR / "server.pid"
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    filename=LOG_FILE,
+    filemode="a",
+)
+log = logging.getLogger("painel")
+
+
+def server_url(path: str = "/") -> str:
+    return f"http://{HOST}:{PORT}{path}"
+
+
+def _parse_query(query: str) -> dict:
+    from urllib.parse import parse_qs, unquote
+
+    out = {}
+    for k, v in parse_qs(query, keep_blank_values=True).items():
+        out[unquote(k)] = unquote(v[0]) if v else ""
+    return out
+
+
+def _merge_delta(previous: dict, delta: list[dict], since_iso_ref: str) -> tuple[list[dict], list[dict]]:
+    """Aplica o delta (lastUpdate) sobre o cache anterior e devolve (ativos, resolvidos)."""
+    from analyzer import parse_date
+
+    abertos = ("Resolved", "Closed", "Canceled")
+    ref = parse_date(since_iso_ref)
+    ativos: dict[int, dict] = {
+        int(t["id"]): t for t in (previous.get("ativos") or []) if t.get("id") is not None
+    }
+    resolvidos: dict[int, dict] = {
+        int(t["id"]): t for t in (previous.get("resolvidos") or []) if t.get("id") is not None
+    }
+    for t in delta:
+        try:
+            tid = int(t.get("id"))
+        except (TypeError, ValueError):
+            continue
+        base = t.get("baseStatus") or ""
+        if base in abertos:
+            ativos.pop(tid, None)
+            rd = parse_date(t.get("resolvedIn") or t.get("closedIn"))
+            if ref is None or rd is None or rd >= ref:
+                resolvidos[tid] = t
+        else:
+            resolvidos.pop(tid, None)
+            ativos[tid] = t
+    if ref is not None:
+        for tid, r in list(resolvidos.items()):
+            rd = parse_date(r.get("resolvedIn") or r.get("closedIn"))
+            if rd is not None and rd < ref:
+                resolvidos.pop(tid, None)
+    return list(ativos.values()), list(resolvidos.values())
+
+
+def is_running() -> bool:
+    try:
+        with socket.create_connection((HOST, PORT), timeout=1):
+            return True
+    except OSError:
+        return False
+
+
+def open_browser() -> None:
+    threading.Timer(1.0, lambda: webbrowser.open(server_url())).start()
+
+
+def spawn_daemon() -> None:
+    log_file = open(LOG_FILE, "ab")
+    subprocess.Popen(
+        [sys.executable, str(Path(__file__).resolve()), "--daemon"],
+        cwd=str(BASE_DIR),
+        stdout=log_file,
+        stderr=log_file,
+        stdin=subprocess.DEVNULL,
+        start_new_session=True,
+    )
+    log_file.close()
+
+
+class Handler(BaseHTTPRequestHandler):
+    server_version = "MovideskPainel/1.0"
+
+    def log_message(self, fmt, *args):
+        log.debug("%s - %s", self.address_string(), fmt % args)
+
+    def _send(self, code: int, body: bytes, content_type: str = "application/json; charset=utf-8"):
+        self.send_response(code)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _json(self, data, code: int = 200):
+        self._send(code, json.dumps(data, ensure_ascii=False).encode("utf-8"))
+
+    def do_GET(self):
+        path, _, query = self.path.partition("?")
+        params = _parse_query(query)
+        if path in ("/", "/index.html"):
+            if not INDEX_FILE.exists():
+                self._send(404, b"index.html nao encontrado", "text/plain; charset=utf-8")
+                return
+            self._send(200, INDEX_FILE.read_bytes(), "text/html; charset=utf-8")
+        elif path == "/health":
+            self._json({"status": "ok"})
+        elif path == "/api/agentes":
+            self._agentes()
+        elif path == "/api/historico":
+            from dados import buscar_historico
+
+            self._json(buscar_historico(params.get("q") or ""))
+        elif path == "/api/plantao":
+            from dados import build_plantao
+
+            self._json(build_plantao(params.get("data") or None))
+        elif path == "/api/mesclas":
+            from dados import build_mesclas
+
+            escopo = params.get("escopo") or "atual"
+            agente = (params.get("agente") or AGENT_EMAIL).lower()
+            self._json(build_mesclas(escopo, agente))
+        elif path == "/api/acoes":
+            self._acoes(params.get("id") or "")
+        elif path == "/api/servicos":
+            from dados import build_servicos
+
+            self._json(build_servicos())
+        elif path == "/api/ranking":
+            from dados import build_ranking
+
+            self._json(build_ranking())
+        elif path == "/api/solucao":
+            self._solucao(params.get("id") or "")
+        elif path == "/api/dados":
+            from dados import load_cache_payload
+
+            agente = (params.get("agente") or AGENT_EMAIL).lower()
+            payload = load_cache_payload(agente)
+            if payload is None:
+                self._json({"vazio": True, "mensagem": "Sem dados. Clique em Consultar."})
+                return
+            payload["origem"] = "cache"
+            self._json(payload)
+        else:
+            self._send(404, b"nao encontrado", "text/plain; charset=utf-8")
+
+    def _acoes(self, ticket_id: str):
+        from dados import acao_info
+
+        try:
+            tid = int(ticket_id)
+        except (TypeError, ValueError):
+            self._json({"erro": "id invalido"}, code=400)
+            return
+        try:
+            from analyzer import parse_date
+            from api_client import MovideskClient
+
+            acts = MovideskClient().get_ticket_actions(tid)
+            itens = []
+            for a in acts:
+                d = parse_date(a.get("createdDate"))
+                cb = a.get("createdBy") or {}
+                desc = (a.get("description") or "").strip()
+                itens.append({
+                    "data": d.strftime("%d/%m/%Y %H:%M") if d else "",
+                    "data_iso": d.isoformat() if d else "",
+                    "autor": cb.get("businessName") or cb.get("email") or "",
+                    "interno": a.get("type") == 1,
+                    "descricao": desc,
+                })
+            itens.sort(key=lambda x: x["data_iso"])
+            self._json({"ticket": tid, "acoes": itens})
+        except Exception as exc:
+            log.exception("Falha ao buscar acoes do ticket %s", ticket_id)
+            self._json({"erro": str(exc)}, code=502)
+
+    def _solucao(self, ticket_id: str):
+        from dados import load_cache_raw, montar_solucao, save_cache_raw
+
+        try:
+            tid = int(ticket_id)
+        except (TypeError, ValueError):
+            self._json({"erro": "id invalido"}, code=400)
+            return
+        raw = load_cache_raw()
+        cache = raw.get("solucoes") if isinstance(raw.get("solucoes"), dict) else {}
+        key = str(tid)
+        if key in cache:
+            self._json(cache[key])
+            return
+        try:
+            from api_client import MovideskClient
+
+            acts = MovideskClient().get_ticket_actions(tid)
+            sol = montar_solucao(acts)
+            sol["ticket"] = tid
+            cache[key] = sol
+            raw["solucoes"] = cache
+            save_cache_raw(raw)
+            self._json(sol)
+        except Exception as exc:
+            log.exception("Falha ao montar solucao do ticket %s", ticket_id)
+            self._json({"erro": str(exc)}, code=502)
+
+    def _historico_completo(self, dias: int = 365):
+        from datetime import timedelta
+
+        from dados import load_cache_raw, save_cache_raw
+
+        try:
+            from api_client import MovideskClient
+
+            now = datetime.now()
+            since = now - timedelta(days=dias)
+            tz = since.astimezone().strftime("%z")
+            tz = f"{tz[:3]}:{tz[3:]}" if tz else "-03:00"
+            since_odata = f"{since.strftime('%Y-%m-%dT00:00:00')}{tz}"
+            client = MovideskClient()
+            tickets = client.list_resolved_tickets_since(None, since_odata)
+            raw = load_cache_raw()
+            raw["historico"] = tickets
+            raw["historico_salvo_em"] = now.isoformat(timespec="seconds")
+            save_cache_raw(raw)
+            self._json({"ok": True, "total": len(tickets), "salvo_em": raw["historico_salvo_em"]})
+        except Exception as exc:
+            log.exception("Falha ao carregar historico completo")
+            self._json({"erro": str(exc)}, code=502)
+
+    def _agentes(self):
+        raw = load_cache_raw()
+        agentes = raw.get("agentes") if isinstance(raw.get("agentes"), list) else []
+        if not agentes:
+            try:
+                from api_client import MovideskClient
+
+                agentes = MovideskClient().list_agents()
+                raw["agentes"] = agentes
+                save_cache_raw(raw)
+            except Exception as exc:
+                log.warning("Falha ao listar atendentes: %s", exc)
+        if AGENT_EMAIL and not any(a.get("email") == AGENT_EMAIL.lower() for a in agentes):
+            agentes = [{"nome": AGENT_NAME or AGENT_EMAIL, "email": AGENT_EMAIL.lower()}] + agentes
+        self._json({"agentes": agentes, "default": AGENT_EMAIL.lower() or "*", "agente_nome": AGENT_NAME})
+
+    def do_POST(self):
+        path, _, query = self.path.partition("?")
+        params = _parse_query(query)
+        if path == "/api/consultar":
+            agente = (params.get("agente") or AGENT_EMAIL).lower()
+            self._consultar(agente=agente, forcar="forcar" in params)
+        elif path == "/api/historico/completo":
+            self._historico_completo()
+        elif path == "/api/plantao":
+            self._salvar_plantao()
+        elif path == "/api/mesclas":
+            from dados import salvar_fila_mescla
+
+            body = self._read_body()
+            chave = str(body.get("chave") or "").strip()
+            if not chave:
+                self._json({"erro": "chave obrigatoria"}, code=400)
+                return
+            self._json({"fila": salvar_fila_mescla(chave, str(body.get("status") or ""))})
+        else:
+            self._send(404, b"nao encontrado", "text/plain; charset=utf-8")
+
+    def _read_body(self) -> dict:
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            length = 0
+        if length <= 0:
+            return {}
+        try:
+            return json.loads(self.rfile.read(length).decode("utf-8"))
+        except (ValueError, UnicodeDecodeError):
+            return {}
+
+    def _salvar_plantao(self):
+        from dados import load_cache_raw, save_cache_raw
+
+        body = self._read_body()
+        raw = load_cache_raw()
+        plantao = raw.get("plantao") if isinstance(raw.get("plantao"), dict) else {}
+        if isinstance(body.get("por_data"), dict):
+            plantao["por_data"] = {
+                str(k): str(v).lower() for k, v in body["por_data"].items() if v
+            }
+        if "nota" in body:
+            plantao["nota"] = str(body.get("nota") or "")
+        plantao["atualizado_em"] = datetime.now().isoformat(timespec="seconds")
+        raw["plantao"] = plantao
+        save_cache_raw(raw)
+        from dados import build_plantao
+
+        self._json(build_plantao())
+
+    def _consultar(self, agente: str = AGENT_EMAIL, forcar: bool = False):
+        from datetime import timedelta
+
+        from dados import build_payload
+
+        agente = (agente or AGENT_EMAIL).lower()
+        owner = None if agente in ("*", "todos", "") else agente
+        key = agente if owner else "*"
+        try:
+            from api_client import MovideskClient
+
+            client = MovideskClient()
+            now = datetime.now()
+            hoje_dt = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            since_dt = now - timedelta(days=90)
+            survey_dt = now - timedelta(days=365)
+            tz = since_dt.astimezone().strftime("%z")
+            tz = f"{tz[:3]}:{tz[3:]}" if tz else "-03:00"
+            since_odata = f"{since_dt.strftime('%Y-%m-%dT00:00:00')}{tz}"
+            since_survey = survey_dt.strftime("%Y-%m-%dT00:00:00")
+            hoje_odata = f"{hoje_dt.strftime('%Y-%m-%dT00:00:00')}{tz}"
+
+            raw = load_cache_raw()
+            if "por_agente" not in raw and isinstance(raw.get("ativos"), list):
+                raw = {"agentes": raw.get("agentes") or [], "survey": raw.get("survey"),
+                       "survey_salvo_em": raw.get("survey_salvo_em"),
+                       "por_agente": {AGENT_EMAIL.lower(): raw}}
+            por_agente = raw.setdefault("por_agente", {})
+
+            # Atendentes (cache compartilhado).
+            if not raw.get("agentes") and owner:
+                try:
+                    raw["agentes"] = client.list_agents()
+                except Exception as exc:
+                    log.warning("Falha ao listar atendentes: %s", exc)
+
+            # Pesquisa de satisfação: global (conta), reusa cache local se recente.
+            survey = None
+            survey_salvo_em = raw.get("survey_salvo_em")
+            survey_reuso = False
+            if not forcar and isinstance(raw.get("survey"), list):
+                try:
+                    salvo_dt = datetime.fromisoformat(survey_salvo_em) if survey_salvo_em else None
+                except (ValueError, TypeError):
+                    salvo_dt = None
+                if salvo_dt is not None and (now - salvo_dt) <= timedelta(hours=SURVEY_CACHE_HOURS):
+                    survey = raw["survey"]
+                    survey_reuso = True
+                    log.info("Pesquisa reutilizada do cache (salvo em %s)", survey_salvo_em)
+            if survey is None:
+                survey = client.list_survey_responses(since_survey)
+                survey_salvo_em = now.isoformat(timespec="seconds")
+                raw["survey"] = survey
+                raw["survey_salvo_em"] = survey_salvo_em
+
+            # Servicos (catalogo global, cacheado).
+            if forcar or not isinstance(raw.get("services"), list):
+                try:
+                    raw["services"] = client.list_services()
+                    raw["services_salvo_em"] = now.isoformat(timespec="seconds")
+                except Exception as exc:
+                    log.warning("Falha ao listar servicos: %s", exc)
+
+            previous = por_agente.get(key) if isinstance(por_agente.get(key), dict) else None
+            last_sync = (previous or {}).get("last_sync_odata")
+            use_delta = (not forcar) and bool(last_sync) and bool((previous or {}).get("ativos"))
+
+            fetch_start = now - timedelta(minutes=1)
+            tz2 = fetch_start.astimezone().strftime("%z")
+            tz2 = f"{tz2[:3]}:{tz2[3:]}" if tz2 else "-03:00"
+            new_last_sync = f"{fetch_start.strftime('%Y-%m-%dT%H:%M:%S')}{tz2}"
+
+            if use_delta:
+                log.info("Sync incremental do agente %s desde %s", key, last_sync)
+                delta = client.list_tickets_changed_since(owner, last_sync)
+                tickets, resolvidos = _merge_delta(previous, delta, since_odata)
+            else:
+                tickets = client.list_active_tickets(owner)
+                resolvidos = client.list_resolved_tickets_since(owner, since_odata)
+            if owner:
+                interagiu = client.list_tickets_with_my_actions_since(owner, hoje_odata)
+                fora = client.list_participation_outside_load(owner)
+            else:
+                interagiu, fora = [], []
+            por_agente[key] = {
+                "salvo_em": now.isoformat(timespec="seconds"),
+                "last_sync_odata": new_last_sync,
+                "ativos": tickets, "resolvidos": resolvidos,
+                "interagiu_hoje": interagiu, "fora_carga": fora,
+            }
+            save_cache_raw(raw)
+        except Exception as exc:
+            log.exception("Falha ao consultar a API")
+            self._json({"erro": str(exc)}, code=502)
+            return
+
+        payload = build_payload(
+            tickets, now,
+            resolved_raw=resolvidos,
+            survey_raw=survey,
+            interagiu_raw=interagiu,
+            fora_raw=fora,
+            agente_email=agente,
+        )
+        payload["origem"] = "api"
+        payload["movidesk_web"] = MOVIDESK_WEB_URL
+        payload["pesquisa_cache"] = survey_reuso
+        self._json(payload)
+
+
+def main() -> int:
+    if "--daemon" not in sys.argv:
+        if is_running():
+            print(f"Painel ja esta rodando em {server_url()}")
+            open_browser()
+            return 0
+        spawn_daemon()
+        print("Iniciando painel...")
+        for _ in range(30):
+            if is_running():
+                break
+            import time
+            time.sleep(0.3)
+        else:
+            print(f"Nao subiu. Veja {LOG_FILE}", file=sys.stderr)
+            return 1
+        print(server_url())
+        open_browser()
+        return 0
+
+    PID_FILE.write_text(str(__import__("os").getpid()), encoding="utf-8")
+    try:
+        server = ThreadingHTTPServer((HOST, PORT), Handler)
+    except OSError as exc:
+        log.error("Nao foi possivel abrir a porta %s: %s", PORT, exc)
+        return 1
+    log.info("Painel rodando em %s", server_url())
+    print(f"Painel rodando em {server_url()}")
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.server_close()
+        if PID_FILE.exists():
+            PID_FILE.unlink()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
