@@ -1,0 +1,19 @@
+# Segredos e configuracao pessoal
+.env
+.token
+*.token
+
+# Dados gerados / cache (contem dados de clientes)
+cache/
+relatorios/
+__pycache__/
+*.pyc
+*.log
+*.pid
+
+# Ambiente
+.venv/
+venv/
+.idea/
+.vscode/
+.DS_Store
