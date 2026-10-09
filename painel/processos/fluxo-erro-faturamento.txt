@@ -1,0 +1,22 @@
+# FLUXO PARA ERRO DE FATURAMENTOFluxo para verificação de erro no faturamento, onde e o que verificar ? 
+
+Fluxo/Processo:       1.  Onde conferir              Na tela de LOG de Automações verifique se houve registro de erro ou mensagem de Validação do Faturamento 
+
+Conferir no cadastro do cliente o Grupo de Faturamento* se está AUTOMÁTICO (X dias) ou MANUAL.
+Conferir se houve Atualização no cadastro do cliente, se houve* Quais foram ? (questionar cliente)* Quando foi ?* Houve alteração antes ou depois da Data do Faturamento ? // Caso houve alteração na Data de Vencimento ou Grupo de FaturamentoSe Grupo de Faturamento foi alterado para maior quê o (Dia da Cobrança (Vencimento) - Dia atual) = Não irá rodar o faturamento 
+
+Houve faturamento de outro cliente da mesma organização no dia? 
+Verifique na tela da Faturas se houve faturamento de outros clientes e a Origem da Fatura se foi AUTOMÁTICO ou MANUAL
+ Houve faturamento de outro cliente de outra organização no mesmo dia?
+ Assim como informado acima no item 3, verifique se em outras organizações, se o faturamento rodou corretamente, validando se pode ter sido alguma instabilidade na Automação Faturamento
+
+Existe assinatura válida para o cliente, como verificar se deveria ter faturado?
+Confira a Competência Inicial e Competência Final e verifique conforme a vigência informada, se o faturamento deveria ter ocorrido 
+Realize uma Simulação de Faturamento, para validar os dados da assinatura se deveria ter sido faturado
+Existe fatura cancelada para aquele cliente? Quando existe fatura cancelada, qual o comportamento do sistema?
+Se o status da fatura estiver definido como Cancelada, o fluxo da automação não irá refaturar essa fatura, terá que ser realizado o faturamento manualmente 
+Erro de meio de pagamento, onde verificar?
+Na tela de LOG de Automações verifique se houve registro de erro ou mensagem de Requisição Inválida ou solicitando a atualização do Certificado Digital
+Para que o processo de faturamento funcione corretamente, é importante que o Meio de Pagamento esteja funcionando corretamente e a Integração Autorizada
+, se 
+ 
