@@ -1,0 +1,74 @@
+Ocorrência no envio automático de e-mails de NFS-e - 02/10/2026
+
+---
+
+## Texto 1: Lobus Software
+
+**Assunto:** Ocorrência no envio automático de e-mails de NFS-e - [NOME EMPRESA]
+
+Prezados,
+
+Agradecemos por terem nos alertado sobre os e-mails de NFS-e enviados com dados de outra empresa. Confirmamos a ocorrência e queremos explicar com transparência o que aconteceu, o que foi afetado e o que já foi feito.
+
+**O que aconteceu**
+Entre 28/09/2026 e 02/10/2026, uma falha no envio automático de e-mails de NFS-e fez com que alguns e-mails saíssem com o nome da organização de outro cliente da FaturÁgil. A falha aparecia quando duas organizações tinham notas sendo enviadas no mesmo instante.
+
+**O que foi afetado**
+Nos e-mails atingidos, só estes trechos do texto saíram com dados de outra empresa:
+- o nome da organização no assunto;
+- a razão social na linha "Prestador";
+- a assinatura no fim do e-mail (nome, telefone e e-mail de contato).
+
+**O que não foi afetado**
+- Nenhum dado dos clientes de vocês foi exposto a terceiros: as informações dos tomadores estavam corretas e foram enviadas somente aos próprios destinatários.
+- Os arquivos anexados (PDF e XML da NFS-e e demais documentos) estavam corretos e eram da própria [NOME EMPRESA] .
+- Os destinatários estavam corretos: nenhum documento foi enviado a clientes de outra empresa, e nenhum documento de outra empresa foi enviado aos clientes da [NOME EMPRESA] .
+- Número da nota, competência, código de verificação e CNPJ do prestador estavam corretos.
+
+**O que fizemos**
+- Às 14:51 de 02/10/2026, momento que foi identificado o problema, interrompemos os serviços impactados pelo problema para que não houvesse novas ocorrências.
+- Identificamos a causa e publicamos a correção em 02/10/2026, às 17:15.
+- Incluímos um teste automatizado que impede essa falha de voltar.
+- Revisamos os demais envios do sistema (boletos e faturas) e confirmamos que não foram afetados.
+
+**Alcance na sua conta**
+Foram [N] e-mails entregues com esse problema, entre [data inicial] e [data final]. Segue em anexo a lista com data, número da nota e destinatário, para o caso de vocês quererem orientar algum cliente.
+
+Se algum cliente de vocês perguntar, sugerimos a explicação: "o e-mail de envio da NFS-e saiu com uma identificação incorreta no texto; o documento anexo é válido e está correto". Se preferirem, podemos reenviar esses e-mails com o texto correto.
+
+Pedimos desculpas pelo transtorno. Sabemos que o e-mail leva o nome da [NOME EMPRESA] aos seus clientes, e tratamos o caso com prioridade máxima. Fico à disposição para conversar diretamente.
+
+Atenciosamente,
+Marcelo Yukio Outa
+CEO, FaturÁgil
+
+
+---
+
+## Texto 2: Organizações cujo nome apareceu em e-mails de outro cliente
+
+**Assunto:** Comunicado sobre ocorrência no envio de e-mails de NFS-e - [NOME EMPRESA]
+
+Prezados,
+
+Informamos que, entre [28/09/2026] e 02/10/2026, uma falha no envio automático de e-mails de NFS-e da FaturÁgil fez com que o nome, a razão social, o telefone e o e-mail de contato da [ORGANIZAÇÃO] aparecessem no texto de [N] e-mails enviados por outro cliente da plataforma aos clientes dele.
+
+Nenhum documento, nota fiscal, boleto, dado financeiro ou dado de clientes da [ORGANIZAÇÃO] foi exposto. As informações exibidas indevidamente se limitaram aos dados cadastrais da empresa (nome, razão social, telefone e e-mail de contato).
+
+[Incluir só se o levantamento mostrar e-mails da própria organização afetados:] No mesmo período, [N] e-mails de NFS-e enviados pela [ORGANIZAÇÃO] aos seus clientes saíram com o nome de outra empresa no texto. Os anexos e os destinatários desses e-mails estavam corretos. Podemos enviar a lista desses e-mails e reenviá-los com o texto correto, se preferirem.
+
+A causa foi identificada e a correção foi publicada em 02/10/2026, às 17:15. Também incluímos um teste automatizado que impede essa falha de voltar.
+
+Pedimos desculpas e ficamos à disposição para qualquer esclarecimento.
+
+Atenciosamente,
+Marcelo
+CEO, FaturÁgil
+
+---
+
+**Antes de enviar:**
+- **Período e contagens:** use o levantamento de `ENVIADO`, incluindo o canal WhatsApp.
+- **Pendência do FAT-2604:** confirme se os tenants 1, 9 e 99 têm documento de contrato ou CND com o mesmo nome de um documento da Lobus. Se tiverem, a frase "nenhum documento de outra empresa foi enviado aos clientes da Lobus" não pode ser afirmada.
+- **Como removi o reenvio automático:** troquei "pode ter saído" por "saíram" no texto 2, porque com a contagem baseada só em envios entregues o fato está confirmado.
+
