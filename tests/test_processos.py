@@ -36,7 +36,7 @@ def test_carrega_todas_as_secoes_nao_vazias():
 
 
 def test_busca_erro_faturamento():
-    docs, _ = processos.buscar("erro de faturamento")
+    docs, _, _ = processos.buscar("erro de faturamento")
     titulos = [d["titulo"] for d in docs]
     assert "Fluxo: Erro de Faturamento" in titulos
     primeiro = docs[0]
@@ -44,19 +44,42 @@ def test_busca_erro_faturamento():
     assert all(s["titulo"] or s["texto"] for s in primeiro["secoes"])
 
 
+def test_busca_nota_fiscal_com_erro_ignora_paradas():
+    docs, _, termos = processos.buscar("nota fiscal com erro")
+    assert "com" not in termos
+    titulos = [d["titulo"] for d in docs]
+    assert "Playbook de Suporte" in titulos
+    topo = docs[0]
+    assert any("NFSE" in s["titulo"].upper() or "NFS-E" in s["titulo"].upper()
+               for s in topo["secoes"])
+
+
+def test_busca_prefixo_plural():
+    docs, _, _ = processos.buscar("notas fiscais")
+    assert docs, "esperava casar 'notas'/'fiscais' com 'nota fiscal'"
+    docs, _, _ = processos.buscar("erro de faturamento")
+    assert docs[0]["titulo"] == "Fluxo: Erro de Faturamento"
+
+
+def test_busca_sem_paradas_retorna_faturamento():
+    docs, _, termos = processos.buscar("o que fazer para erro de faturamento")
+    assert termos and "erro" in termos and "faturamento" in termos
+    assert "Fluxo: Erro de Faturamento" in [d["titulo"] for d in docs]
+
+
 def test_busca_por_time():
-    docs, _ = processos.buscar("", time="implantacao")
+    docs, _, _ = processos.buscar("", time="implantacao")
     for d in docs:
         assert "implantacao" in d["times"]
-    docs, _ = processos.buscar("", time="coordenacao")
+    docs, _, _ = processos.buscar("", time="coordenacao")
     titulos = [d["titulo"] for d in docs]
     assert "KPI de Suporte" in titulos
 
 
 def test_busca_por_tag_e_sem_resultado():
-    docs, _ = processos.buscar("", tag="faturamento")
+    docs, _, _ = processos.buscar("", tag="faturamento")
     assert docs and any("Erro" in d["titulo"] for d in docs)
-    docs, _ = processos.buscar("zzznadaexiste", tag="faturamento")
+    docs, _, _ = processos.buscar("zzznadaexiste", tag="faturamento")
     assert not docs
 
 
