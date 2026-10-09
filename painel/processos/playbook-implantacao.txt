@@ -1,0 +1,385 @@
+Playbook de Implantação
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# HELP DESK
+
+https://atendimento.faturagil.com.br/
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# BASE DE CONHECIMENTO
+
+https://atendimento.faturagil.com.br/kb/article/199704/ola-que-bom-te-ver-por-aqui
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# PASTAS NO DRIVE
+
+Pasta do Suporte: Suporte Embradev FaturÁgil
+Pasta dos Clientes: Clientes implantação / treinamento
+Pasta de manuais: Manuais
+Pasta de NFS-e Tecnospeed: NFS-e - nota fiscal de serviço eletrônica - Tecnospeed
+Pasta da PJBank: PJBank - Boleto, Cartão e Conta Digital
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ORDEM PRIORIDADE
+Configuração Bancária - O cliente precisa cobrar pelo seus serviços
+Configuração de e-mail - Geralmente envia-se por e-mail a cobrança
+Configuração de Nota - A NFS-e, não menos importante, fica na sequência
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# AGENDAMENTOS DE ONBOARDING
+
+SLA
+Enviar e-mail de boas-vindas com agenda e sugestão de datas e horários.
+Cobrar retorno do cliente POR PERÍODO
+Ex: 
+
+Enviar agenda pela manhã por e-mail/ticket.
+Cliente não deu retorno a respeito da agenda, entrar com ligação no período da tarde.
+Em caso de não conseguir contato, entrar com mensagem e ligação no período da manhã do próximo dia, até que se tenha sucesso no agendamento.
+
+Obs1: Se tiver dificuldade em contactar mesmo assim, pedir ajuda para Carlos, Marcelo, Comercial.
+
+Obs2: Sempre que tiver algo que dependa do cliente, como por exemplo: Abrir nova conta em banco, ver questões sobre nota fiscal, agendar data de retorno com ele. Não esperar apenas pelo cliente retorne, pois ele pode esquecer ou passar muito tempo. É dever da equipe agilizar o processo de onboarding do cliente.
+
+Objetivo: Implantar o mais breve possível e demonstrar interesse por parte da nossa equipe de concluir esta etapa do atendimento.
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ONBOARDING
+
+Guia para o Implantador: a Inicial *
+
+
+Conferir a lista de onboarding diariamente:
+- conferir as tarefas que foi combinada com o cliente
+- sugerir passo a passo para fazer essas atividades
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# PASSE DE BASTÃO DE VENDAS PARA IMPLANTAÇÃO
+
+O vendedor já sabe as dores do Cliente (pois já entrevistou)
+Então, não precisa perguntar o que o Cliente já falou uma vez, que são suas DORES
+
+O VENDEDOR deve passar um Check-list para o IMPLANTADOR com as necessidades principais, no formulário via e-email.
+O check-list deve ser bem objetivo e entendível
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# FLUXO DEPOIS DE VENDAS
+
+1 - Vendedor enviar o e-mail para atendimento@faturagil.com.br 
+
+2 – Vendedor adiciona na planilha de implantação
+Link: Acompanhamento implantações - FaturÁgil 
+
+3 – Vendedor avisa no canal Discord #agenda-implantacao
+Exemplo de texto para enviar no canal:“[Onboarding FaturÁgil - AVIZ CONTABILIDADE]
+Ticket: 19246”
+
+4 - Agendamento da 1ª reunião
+Em paralelo, o vendedor verifica horários disponíveis com o Implantador
+E alinha com o Cliente
+
+5 - Cadastrar Cliente no Movidesk
+Implantadador cadastra no Movidesk: Empresa e Usuários do Cliente
+
+Dados da Empresa
+- Tipo: Empresa
+- Perfil: Cliente
+- Nome Fantasia: 
+- Razão Social: 
+-  Cód. Ref. (Informar o CNPJ somente números): 
+-  Perfil de acesso: Clientes
+- Classificação: É o nome do PLANO CONTRATADO. Ex: “FaturÁgil PLUS – Em Implantação”
+- E-mail: NÃO INFORMAR.
+- Telefone: Sim, informar.
+
+Dados do Usuário
+- Tipo: Pessoa
+- Perfil: Cliente
+- Nome:
+- Usuário (É o e-mail):
+- Senha (CNPJ/CPF somente números):
+-  Cód. Ref. (Informar o CNPJ somente números, traço, número sequencial): Ex: 20439189000120-1
+-  Perfil de acesso: Clientes
+-  Cargo: Ex: Sócio
+- E-mail: Sim, o mesmo do campo Usuário
+- Telefone: Sim, informar.
+- Relações/ Selecione a organização:
+
+
+
+
+
+> vendas (marcelo) >> boas-vindas
+Mensagem de boas-vindas
+Novo » Implantação liberada
+Responsável: Implantação » RICARDO / AMARAL
+
+Login Carlos: carlos@faturagil.com.br
+Senha Carlos: *******
+
+Detalhe: Conferir o total de HORAS DE SETUP no formulário
+
+
+
+> vendas (carlos) - login e senha
+liberar plataforma
+cadastrar usuários
+enviar link do manual
+
+> configurar meios de pagamento (ricardo)
+envio de msg simples
+> controle de competência
+envio de msg simples
+
+> implantador (ricardo/marcelo amaral) - boas-vindas
+Mensagem de boas-vindas
+Agendamento da Call 1 Alinhamento
+Implantação » Agendar onboarding
+
+Se
+em 1 dia útil, se não responde, contatar por whats
+em 2 dias úteis, se não responde, contata por ligação
+
+> Implantador (ricardo) - contato por whats para agendar
+MANTÉM: Implantação » Agendar onboarding
+
+
+> implantação/cs (ricardo) - CALL 1 ALINHAMENTO
+alinhamento das expectativas - o que o cliente espera do FaturÁgil
+canais de atendimento e suporte FaturÁgil: Chat, Ticket, E-mail, Sistema de Help-desk
+como funciona o onboarding, reuniões, agendamentos
+vamos solicitar tarefas para o cliente realizar
+treinamento inicial
+parametrizações
+
+
+> implantação/cs (ricardo) - CALL 2
+treinamento e dúvidas
+
+
+> implantação/cs (ricardo) - CALL 3
+treinamento e dúvidas
+
+
+> implantação/cs (ricardo) - CALL 4
+treinamento e dúvidas
+
+
+> implantação/cs (ricardo) - CALL EXTRA (caso necessário)
+treinamento e dúvidas
+necessário aprovação do MARCELO
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# PREMISSAS DE AGENDAMENTO
+
+o cliente percebe valor/benefício do que contratou mais rápido
+o cliente tá empolgado/ está quente, aproveite
+o cliente sai mais rápido do concorrente
+o fluxo de implantação FaturÁgil fica mais fluído e mais ágil 
+nossa equipe consegue implantar mais clientes em menos tempo
+se tiver agenda, ofereça o horário mais próximo, se tiver horário livre agora e o cliente puder, já faça a call
+
+DUPLA CHECAGEM:
+
+Consulte os tickets em aberto que este cliente possui
+É possível que o cliente envie para o suporte arquivos como NFS-e ou dados bancários
+O intuito é não ficar com o ticket aguardando (solto) o atendimento
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# AGENDAMENTO DO TREINAMENTO
+
+
+
+1) boas-vindas, enviar sugestão de data e hora, assim o cliente não precisa ficar pensando, ele escolhe nas sugestões pré-definidas
+
+Enviar horários do dia atual e do dia seguinte com agenda disponível.
+Se não tiver disponível no dia atual e/ou seguinte, enviar agenda dos próximos dois dias úteis com horário disponível.
+Enviar até 2 horários em cada dia.
+Assim, fica menos opção para o cliente tomar decisão.
+E se no dia atual ou no próximo dia possuir apenas um horário, manda apenas um horário mesmo.
+Sempre está indo, no mínimo, 2 opções de horário em dias diferentes.
+Caso o cliente não puder em nenhum, ele vai sugerir ou perguntar outra agenda.
+
+AGENDAMENTO
+SLA
+1° dia - Enviar e-mail de boas-vindas com agenda de datas e horários.
+2° dia - Após 24h das boas-vindas, se o cliente NÃO responder o e-mail, obrigatoriamente, o implantador deve LIGAR para agendar.
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# APÓS CONCLUIR A REUNIÃO
+
+usar a macro adequada para cada reunião
+definir/sugerir a data da próxima reunião (sempre ter a próxima ação)
+incluir o link da gravação no início da ação para que o cliente possa assistir novamente e fixar melhor o conteúdo tratado (Compartilhar o link da gravação do MEET - Compartilhar no modo “Qualquer pessoa com o link”)
+combinar as tarefas que o cliente precisa fazer
+listar as atividades que serão trabalhadas na próxima reunião
+listar em tópicos/menus o que foi feito nesta reunião
+revisar e adicionar a ata completa ao final da ação do ticket 
+
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# CLIENTE FALTOU NO TREINAMENTO ?
+
+1) Se o Cliente justificou:
+- reagendar para a próxima data
+- ou se o cliente não conseguir passar data e horário no momento, o IMPLANTADOR mesmo escolher data e horário
+- registra no ticket
+
+2) Cliente faltou e não conseguiu contato
+- relatar da falta do cliente na reunião no ticket
+- o IMPLANTADOR mesmo escolher data e horário, mandar a sugestão no ticket
+- registrar no ticket
+
+IMPORTANTE: registrar todas as interações no ticket, mesmo que não tenha contato com o cliente
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# CLIENTE NÃO RESPONDE DATA PARA AGENDAMENTO
+
+Após 2 dias úteis sem resposta:
+- LIGAR para agendar
+- se não responder, tentar whatsapp
+- após a ligação concluir, registrar no ticket
+- se falou com o cliente ou pelo menos tentou, tem que registrar no ticket
+
+> repetir o processo, até conseguir agendar ou uma informação útil
+
+> se tentou contato 3 vezes entre 1 ou 2 semanas e não teve sucesso, acionar o COORDENADOR (CARLOS) para tentar acessar o cliente
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# CREDENCIAMENTO DE BOLETO, PIX E CARTÃO PJBANK
+
+Fluxo/Processo:
+
+Abrir o ticket de credenciamento FaturÁgil.
+Sempre preencher todas perguntas do formulário.
+Normalmente, todos os dados estão no ticket de ONBOARDING.
+Se ficou com alguma dúvida em alguma pergunta do formulário, perguntar para o time (Carlos, Marcelo).
+Solicitar o contrato social para o Cliente.
+Se for cartão de crédito, solicitar o print do internet banking para o cliente.
+Anexar o contrato social, caso o cliente já enviou o documento para nós.
+Anexar o print do internet banking se for cartão de crédito, caso o cliente já enviou o documento para nós.
+Vincular o ticket de ONBOARDING como ticket PAI.
+Incluir AÇÃO INTERNA com as informações das tarifas registradas no ticket de ONBOARDING.
+Abrir CHAMADO PJBANK.
+Se o cliente ainda não enviou o contrato social, mesmo assim JÁ ABRIR O CHAMADO NA PJBANK.
+Incluir AÇÃO INTERNA com o número do chamado da Pjbank e anexar o PDF do e-mail/chamado PJbank.
+Após 2 dias úteis, cobrar PJBank se foi concluído.
+
+Acompanhamento chamado PJBank
+A cada atualização no CHAMADO PJBANK, incluir AÇÃO INTERNA para atualizar o Ticket FaturÁgil com o histórico.
+Incluir AÇÃO INTERNA com resumo das novidades e anexar o PDF do e-mail/chamado PJbank.
+Atualizar ticket FaturÁgil com AÇÃO PÚBLICA, se necessário atualizar o cliente
+
+Credenciamento aprovado
+Incluir AÇÃO INTERNA com resumo das novidades e anexar o PDF do e-mail/chamado PJbank.
+Fechar ticket FaturÁgil
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# CREDENCIAMENTO DE CARTÃO
+Retorno da pjbank que serviço do site não é adequado ao CNAE/atividade
+
+Fluxo/Processo:
+
+1 - conferir os CNAEs do contrato social e receita federal
+- tirar prints
+
+Link receita: https://solucoes.receita.fazenda.gov.br/Servicos/cnpjreva/Cnpjreva_Solicitacao.asp 
+
+2 - conferir o serviço vendido no site
+- tirar prints
+- escrever um resumo do dos serviços oferecidos
+
+Exemplo: https://isomos.atonadigital.com.br/ 
+
+3 - responder com a possível solução
+- saudação
+- explicação do retorno do banco pjbank 
+- caso tiver informação de que o cliente já está adequando o contrato social, adicionar tbm
+- incluir possível SOLUÇÃO
+- adicionar análise (análise do serviço, retorno da pjbank, prints da receita e contrato social, prints do contrato social)
+
+4 - ligar para o cliente
+- após enviar a mensagem, ligar para falar a respeito
+Exemplo: https://atendimento.faturagil.com.br/Ticket/Edit/5335
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# IMPLANTAÇÕES PENDENTES PARA CONCLUIR
+
+Fluxo:
+Perguntar ao cliente no Ticket
+Se não responder, 2 dias depois, perguntar por ligação ou whatsapp
+Registrar isto no ticket (mesmo que repetido a mesma informação do item 1)
+
+MODELO DE PERGUNTA AO CLIENTE:
+
+Bom dia XXXXXXX, tudo bem?
+Estamos concluindo o ticket de onboarding, e gostaria de saber se ficou mais alguma dúvida da implantação?
+
+RETORNO DO CLIENTE: Se ainda tem dúvidas:
+
+Muito obrigado, vou finalizar o ticket de onboarding. 
+Sempre que precisar de ajuda, pode nos acionar via Chat, Help-Desk ou e-mail atendimento@faturagil.com.br 
+Abraços
+
+RETORNO DO CLIENTE: Se ainda tem dúvidas:
+
+Obrigado pelo retorno.
+Certo, preciso agendar uma data para concluir essa semana, ou no máximo, até semana que vem. 
+Tenho os seguintes horários, pode ser algum desses?
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# SUGESTÕES DO CLIENTE
+
+durante a implantação, muitas vezes o cliente pode realizar sugestões
+então, registrar essas sugestões do cliente no ticket de implantação mesmo
+sempre anexar ao ticket de onboarding em uma ação separada
+
+após concluir a call do onboarding/treinamento
+1) anexar as dicas em uma ação separada
+2) fazer a ação da reunião normalmente
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# COORDENADOR DO SUPORTE: LESLEY
+
+meu trabalho é:
+destravar impedimentos
+fornecer ferramentas para o trabalho do time
+
+
+# CONFIGURAÇÃO DE E-MAIL / NFS-E / MEIO DE PAGAMENTO
+Responsabilidade do setor de Implantação
+Equipe de Suporte pode atender e realizar a configuração? SIM!
+Para o caso dos implantadores estarem em atendimento e não for possível atender o cliente naquele momento, geralmente aguardando no chat:
+A equipe de Suporte pode realizar a configuração para adiantar o processo.
+Comunicar o implantador sobre o atendimento, mesmo em caso de sucesso.
+Em caso de dúvida, acionar à coordenadora Lesley
+
+
+
+
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
