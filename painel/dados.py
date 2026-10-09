@@ -10,7 +10,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
 from analyzer import build_ticket_info, find_merge_candidates, hours_between, parse_date, sla_risks  # noqa: E402
-from config import AGENT_EMAIL, AGENT_NAME, CACHE_FILE, MOVIDESK_WEB_URL  # noqa: E402
+from config import AGENT_EMAIL, AGENT_NAME, CACHE_FILE, MOVIDESK_WEB_URL, papel_agente  # noqa: E402
 
 SLA_LEVELS = ("VENCIDO", "RISCO")
 
@@ -1011,8 +1011,12 @@ def build_servicos() -> dict:
             "atualizado_em": raw.get("services_salvo_em") or ""}
 
 
-def build_ranking() -> dict:
-    """Comparativo por atendente: carga, tempo medio parado, FCR, reaberturas e CSAT/NPS."""
+def build_ranking(incluir_dev: bool = False) -> dict:
+    """Comparativo por atendente: carga, tempo medio parado, FCR, reaberturas e CSAT/NPS.
+
+    Por padrao esconde o time de dev (Leandro migrou para dev); passe incluir_dev=True
+    para comparar tambem com quem nao esta mais no suporte.
+    """
     from analyzer import build_ticket_info
 
     raw = load_cache_raw()
@@ -1057,6 +1061,9 @@ def build_ranking() -> dict:
     for email, bucket in por_agente.items():
         if not isinstance(bucket, dict):
             continue
+        papel = papel_agente(email)
+        if papel == "dev" and not incluir_dev:
+            continue
         ativos = bucket.get("ativos") or []
         resolvidos = bucket.get("resolvidos") or []
         if not ativos and not resolvidos:
@@ -1076,6 +1083,7 @@ def build_ranking() -> dict:
         itens.append({
             "email": email,
             "nome": _owner_label(raw, email),
+            "papel": papel,
             "ativos": len(ativos),
             "criticos": criticos,
             "tempo_medio_parado": round(sum(ids_tempo) / len(ids_tempo), 1) if ids_tempo else None,
@@ -1089,7 +1097,7 @@ def build_ranking() -> dict:
             "nps": nps,
         })
     itens.sort(key=lambda x: (-x["ativos"], -(x["tempo_medio_parado"] or 0)))
-    return {"total": len(itens), "itens": itens}
+    return {"total": len(itens), "itens": itens, "incluir_dev": bool(incluir_dev)}
 
 
 def montar_solucao(actions: list[dict]) -> dict:
