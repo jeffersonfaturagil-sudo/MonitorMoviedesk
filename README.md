@@ -67,7 +67,16 @@ parados, mescláveis, pendências, satisfação, plantão e histórico de contat
 - **Filtro por serviço** (topo): restringe as listas ao serviço selecionado.
 - **Plantão**: quem está de plantão hoje e os tickets novos do dia.
 - **Contato** (📞): histórico de ligações/tentativas registradas no ticket.
-- **Agenda do dia**: texto editável, salvo no navegador.
+- **Agenda do dia**: mostra os tickets **resolvidos/encerrados desde o último dia
+  útil até ontem**, pulando **sábados, domingos e feriados**. Consulte todo dia útil
+  pela manhã; se pular dias (fim de semana/feriado), ela **acumula tudo** desde o
+  último dia útil — nenhum ticket fica de fora (ex.: resolvidos de sexta 09/10
+  aparecem na terça 13/10, junto com sáb/dom e o feriado de segunda 12/10).
+  - Feriados: os **nacionais** já são automáticos (inclui Carnaval, Sexta-feira Santa,
+    Corpus Christi). Para feriados municipais/pontos facultativos, use o arquivo
+    `feriados.txt` (um `AAAA-MM-DD` por linha) ou a variável `MOVIDESK_FERIADOS`
+    no `.env`. O nome do técnico no texto sai do atendente selecionado no topo.
+  - O texto editável continua sendo salvo no navegador.
 
 > **Histórico da API:** a rota `/tickets` só devolve tickets com `lastUpdate` dos
 > últimos 90 dias; os mais antigos ficam em `/tickets/past`. O painel consulta as
