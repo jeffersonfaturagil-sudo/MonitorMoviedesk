@@ -119,13 +119,13 @@ class MovideskClient:
     )
 
     def _list_tickets(self, flt: str, orderby: str, select: str | None = None,
-                      expand: str = "clients") -> list[dict]:
+                      expand: str = "clients", route: str = "tickets") -> list[dict]:
         results: list[dict] = []
         skip = 0
         top = 100
         while True:
             data = self._get(
-                "tickets",
+                route,
                 {
                     "$filter": flt,
                     "$select": select or self.TICKET_SELECT,
@@ -246,11 +246,54 @@ class MovideskClient:
             return data[0].get("actions") or []
         return []
 
-    def list_survey_responses(self, since_iso: str, max_items: int = 1000) -> list[dict]:
+    # Campos leves suficientes para o indice de duvidas.
+    INDEX_SELECT = (
+        "id,protocol,subject,createdDate,lastUpdate,resolvedIn,closedIn,"
+        "baseStatus,status,justification,origin,"
+        "serviceFirstLevel,serviceSecondLevel,serviceFirstLevelId,"
+        "category,urgency,tags,actionCount"
+    )
+
+    def list_tickets_range(self, start_odata: str, end_odata: str,
+                           campo: str = "resolvedIn", status: tuple[str, ...] | None = None,
+                           owner_email: str | None = None) -> list[dict]:
+        """Busca tickets cujo `campo` (resolvedIn/createdDate/lastUpdate) esta em [start,end).
+        Consulta AMBAS as rotas (/tickets e /tickets/past) e deduplica por id, pois a
+        rota /tickets so cobre lastUpdate dos ultimos 90 dias."""
+        faixa = f"{campo} ge {start_odata} and {campo} lt {end_odata}"
+        partes = [faixa]
+        own = self._owner_clause(owner_email)
+        if own:
+            partes.insert(0, own)
+        if status:
+            partes.append("(" + " or ".join(f"baseStatus eq '{s}'" for s in status) + ")")
+        flt = " and ".join(partes)
+        encontrados: dict[int, dict] = {}
+        for route in ("tickets", "tickets/past"):
+            try:
+                for t in self._list_tickets(
+                    flt, f"{campo} asc",
+                    select=f"{self.INDEX_SELECT},owner,createdBy",
+                    expand="clients,owner,createdBy",
+                    route=route,
+                ):
+                    try:
+                        encontrados[int(t["id"])] = t
+                    except (KeyError, TypeError, ValueError):
+                        continue
+            except MovideskError as exc:
+                log.warning("Falha em /%s (%s..%s): %s", route, start_odata, end_odata, exc)
+        log.info("%d tickets no periodo %s..%s campo=%s", len(encontrados), start_odata, end_odata, campo)
+        return list(encontrados.values())
+
+    def list_survey_responses(self, since_iso: str, until_iso: str | None = None,
+                              max_items: int = 100000) -> list[dict]:
         items: list[dict] = []
         after: str | None = None
         for _ in range(max_items // 100 + 1):
             params: dict = {"limit": 100, "responseDateGreaterThan": since_iso}
+            if until_iso:
+                params["responseDateLessThan"] = until_iso
             if after:
                 params["startingAfter"] = after
             data = self._get("survey/responses", params)
