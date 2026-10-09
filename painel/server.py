@@ -308,8 +308,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/agentes":
             self._agentes()
         elif path == "/api/historico":
-            from dados import buscar_historico
+            from dados import buscar_historico, definir_agente
 
+            definir_agente(params.get("agente") or "")
             self._json(buscar_historico(params.get("q") or ""))
         elif path == "/api/mapa-horarios":
             from dados import build_mapa_horarios
@@ -349,8 +350,9 @@ class Handler(BaseHTTPRequestHandler):
                 "restantes": restantes,
             })
         elif path == "/api/parecidos":
-            from dados import build_parecidos
+            from dados import build_parecidos, definir_agente
 
+            definir_agente(params.get("agente") or "")
             try:
                 tid = int(params.get("id") or "")
             except (TypeError, ValueError):
