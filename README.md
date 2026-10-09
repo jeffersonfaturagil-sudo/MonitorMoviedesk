@@ -61,10 +61,24 @@ parados, mescláveis, pendências, satisfação, plantão e histórico de contat
     longos demoram (ex.: ~1 mês ≈ 1 min; o histórico completo pode levar bastante).
   - **Solução pronta**: mostra a última resposta pública/nota interna do ticket.
 - **Equipe / Ranking**: comparativo por atendente (carga, críticos, tempo médio parado,
-  FCR, reabertos, CSAT/NPS). Por padrão mostra só o **time de suporte** (Jefferson +
-  Lucas); marque **"mostrar time de dev"** para incluir quem migrou para desenvolvimento
-  (ex.: Leandro). Os times são configuráveis no `.env` (`MOVIDESK_AGENTES_SUPORTE`,
-  `MOVIDESK_AGENTES_DEV`).
+  FCR, reabertos, CSAT/NPS) + coluna **Foco** (tickets novos/atualizados pelo cliente hoje,
+  antigos &gt;7d parados, reclamações, implantação e fornecedores em aberto). Por padrão
+  mostra só o **time de suporte** (Jefferson + Lucas); marque **"mostrar time de dev"**
+  para incluir quem migrou para desenvolvimento (ex.: Leandro). Os times são
+  configuráveis no `.env` (`MOVIDESK_AGENTES_SUPORTE`, `MOVIDESK_AGENTES_DEV`).
+- **SLA 1h**: regra dos playbooks — responder em até **1 hora** após a última ação do
+  cliente (ou em tickets **novos**). Lista os tickets que estão nessa condição e mostra o
+  alerta de **fila do dia** (tickets novos/atualizados pelo cliente hoje; >15 pede reforço
+  até a fila voltar a ~8).
+- **Fornecedor**: tickets com justificativa **Retorno de Fornecedor** ou tags
+  `fornecedor_*` (C6, PJBank, Sicoob, Sicredi, ...). Regra: atualizar o cliente
+  **diariamente**, mesmo sem retorno do fornecedor.
+- **Encerrar 5d**: justificativa **Retorno do Cliente - Encerramento** — o ticket é
+  resolvido **automaticamente em 5 dias** se o cliente não responder; mostra o prazo e os
+  que estão chegando no limite.
+- **Implantação**: tickets de clientes em implantação (por tag ou pela lista local
+  `painel/implantados.json`, gerada da pasta *CLIENTES - ATIVOS - IMPLANTAÇÃO* do Drive).
+  Mostra também as **reclamações** em aberto por atendente.
 - **Macros**: confere se uma macro foi usada num ticket e cruza com os outros tickets
   onde a mesma macro aparece.
   - **Validar ticket**: digite o número do ticket; o painel lê as ações dele e mostra
@@ -80,6 +94,11 @@ parados, mescláveis, pendências, satisfação, plantão e histórico de contat
 - **Satisfação**: permite escolher o intervalo de datas (a API aceita
   `responseDateGreaterThan`/`LessThan`). O padrão são os últimos 365 dias.
 - **Filtro por serviço** (topo): restringe as listas ao serviço selecionado.
+- **Pills nas listas**: recorrência (mesmo cliente + assunto que já apareceu, com a
+  última resolução), **Reclamação** (tag `reclamacao_cliente`), **Em implantação**
+  (lista local), fornecedores (tags `fornecedor_*`) e **Checklist** ✅ por serviço
+  (credenciamento/boleto de banco, NFS-e, API/Integração e faturamento) — abre o passo a
+  passo direto na linha do ticket.
 - **Sugestão / tickets parecidos** (💡 nas listas de tickets): busca no índice histórico
   tickets **já resolvidos** parecidos (assunto, cliente, serviço) ou de **mesmo assunto**,
   com botão "Solução pronta" — acelera respostas que já foram dadas antes.
@@ -108,6 +127,9 @@ parados, mescláveis, pendências, satisfação, plantão e histórico de contat
 - `.env` — sua configuração e token (nunca compartilhe; fora do Git).
 - `cache/` — dados das consultas e caches locais (contém dados de clientes).
 - `relatorios/` — relatórios de texto gerados.
+- `painel/implantados.json` — lista local de **clientes em implantação** (fonte usada
+  pela aba **Implantação** e pela pill **Em implantação**). Gere/atualize a partir da
+  pasta *CLIENTES - ATIVOS - IMPLANTAÇÃO* do Drive.
 
 ## Observações
 
