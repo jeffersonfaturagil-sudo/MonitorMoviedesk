@@ -1,7 +1,10 @@
+import collections
 import html
 import json
+import re
 import sys
 import threading
+import unicodedata
 from contextvars import ContextVar
 from datetime import datetime, time, timedelta
 from pathlib import Path
@@ -9,7 +12,15 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
-from analyzer import build_ticket_info, find_merge_candidates, hours_between, parse_date, sla_risks  # noqa: E402
+from analyzer import (  # noqa: E402
+    build_ticket_info,
+    client_name,
+    find_merge_candidates,
+    hours_between,
+    normalize_subject,
+    parse_date,
+    sla_risks,
+)
 from config import AGENT_EMAIL, AGENT_NAME, CACHE_FILE, MOVIDESK_WEB_URL, papel_agente  # noqa: E402
 
 SLA_LEVELS = ("VENCIDO", "RISCO")
@@ -237,6 +248,8 @@ def ticket_dict(t) -> dict:
         "fcr": bool(t.raw.get("resolvedInFirstCall")),
         "reaberto": bool(t.raw.get("reopenedIn")),
         "reaberto_em": (t.raw.get("reopenedIn") or "")[:10],
+        "implantado": bool(cliente_implantado(t.client)),
+        "recorrencia": _rc if (_rc := recorrencia_de(t.id)) else None,
         "tempo_util": _fmt_min(t.raw.get("lifeTimeWorkingTime")),
         "tempo_parado_util": _fmt_min(
             t.raw.get("stoppedTimeWorkingTime") or t.raw.get("stoppedTime")
@@ -1011,6 +1024,246 @@ def build_servicos() -> dict:
             "atualizado_em": raw.get("services_salvo_em") or ""}
 
 
+_IMPLANTADOS: list[str] | None = None
+
+
+def _norm(s: str | None) -> str:
+    """Minusculas, sem acentos, so letras/numeros/espaços (para casar nomes)."""
+    if not s:
+        return ""
+    s = unicodedata.normalize("NFD", str(s).lower())
+    s = "".join(c for c in s if unicodedata.category(c) != "Mn")
+    return re.sub(r"[^a-z0-9 ]", " ", s)
+
+
+def carregar_implantados() -> list[str]:
+    """Lista de clientes ativos em implantação (vem de painel/implantados.json)."""
+    global _IMPLANTADOS
+    if _IMPLANTADOS is None:
+        p = BASE_DIR / "painel" / "implantados.json"
+        _IMPLANTADOS = []
+        if p.exists():
+            try:
+                data = json.loads(p.read_text(encoding="utf-8"))
+            except (ValueError, OSError):
+                data = {}
+            _IMPLANTADOS = [_norm(x) for x in (data.get("itens") or [])]
+    return _IMPLANTADOS
+
+
+def cliente_implantado(cliente: str | None) -> bool:
+    """True se o nome do cliente (aproximado) estiver na lista de implantação."""
+    c = _norm(cliente)
+    if not c:
+        return False
+    for nome in carregar_implantados():
+        if len(nome) >= 4 and (nome in c or c in nome):
+            return True
+    return False
+
+
+def _tags_de(t: dict) -> set[str]:
+    return {str(x).lower() for x in (t.get("tags") or [])}
+
+
+def _ultima_acao(t: dict) -> tuple[datetime | None, str]:
+    """Ultima data de acao e quem foi: 'cliente', 'equipe' ou vazio."""
+    last, autor = None, ""
+    for a in t.get("actions") or []:
+        d = parse_date(a.get("createdDate"))
+        if d and (last is None or d > last):
+            last = d
+            em = ((a.get("createdBy") or {}).get("email") or "").lower()
+            autor = "equipe" if em.endswith(INTERNO) else ("cliente" if em else autor)
+    return last, autor
+
+
+_RECORRENTES: dict = {"at": 0.0, "map": {}}
+
+
+def _map_recorrentes() -> dict:
+    """Mapa tid -> ocorrencias do mesmo cliente com assunto parecido (ativos+resolvidos)."""
+    if _RECORRENTES["at"] and datetime.now().timestamp() - _RECORRENTES["at"] < 300:
+        return _RECORRENTES["map"]
+    raw = load_cache_raw()
+    por_agente = raw.get("por_agente") if isinstance(raw.get("por_agente"), dict) else {}
+    tickets: list[tuple[int, set[str], dict]] = []
+    vistos: set[int] = set()
+    for b in por_agente.values():
+        if not isinstance(b, dict):
+            continue
+        for t in (b.get("ativos") or []) + (b.get("resolvidos") or []):
+            if not isinstance(t, dict) or t.get("id") is None:
+                continue
+            tid = int(t["id"])
+            if tid in vistos:
+                continue
+            vistos.add(tid)
+            tokens = {w for w in normalize_subject(t.get("subject") or "").split() if len(w) > 2}
+            c = _norm(client_name(t))
+            if c and len(tokens) >= 2:
+                tickets.append((tid, tokens, t))
+    por_cliente: dict[str, list] = {}
+    for tid, toks, t in tickets:
+        por_cliente.setdefault(_norm(client_name(t)), []).append((tid, toks, t))
+    rec: dict[str, dict] = {}
+    for grupo in por_cliente.values():
+        if len(grupo) < 2:
+            continue
+        for i, (tid, toks, _) in enumerate(grupo):
+            achou = 0
+            ultima = None
+            for j, (tid2, toks2, t2) in enumerate(grupo):
+                if i == j:
+                    continue
+                if len(toks & toks2) >= 2:
+                    achou += 1
+                    d = parse_date(t2.get("resolvedIn") or t2.get("closedIn"))
+                    if d and (ultima is None or d > ultima):
+                        ultima = d
+            if achou:
+                rec[str(tid)] = {
+                    "total": achou + 1,
+                    "ultima": ultima.strftime("%d/%m/%Y") if ultima else "",
+                }
+    _RECORRENTES.update(at=datetime.now().timestamp(), map=rec)
+    return rec
+
+
+def recorrencia_de(tid: int) -> dict | None:
+    a = None
+    try:
+        a = _map_recorrentes().get(str(tid))
+    except Exception:
+        pass
+    return a or None
+
+
+def build_indicadores() -> dict:
+    """Indicadores operacionais dos playbooks, calculados sobre o cache (bucket *):
+
+    - sla: tickets que exigem resposta nossa ha +1h (SLA de 1 hora).
+    - fila: tickets novos/atualizados pelo cliente hoje (reforco acima de 15).
+    - fornecedor: aguardando retorno de fornecedor/banco (tag fornecedor_*).
+    - retorno_encerrar: Aguardando cliente - encerramento (auto-resolve em 5 dias).
+    - implantacao: clientes em implantacao (tags ou lista painel/implantados.json).
+    - reclamacoes: tickets com a tag reclamacao_cliente.
+    """
+    from analyzer import client_name
+    from collections import Counter
+
+    raw = load_cache_raw()
+    por_agente = raw.get("por_agente") if isinstance(raw.get("por_agente"), dict) else {}
+    ativos = []
+    if isinstance(por_agente.get("*"), dict):
+        ativos = por_agente["*"].get("ativos") or []
+    if not ativos and por_agente:
+        ativos = next((b.get("ativos") or [] for b in por_agente.values()
+                       if isinstance(b, dict) and b.get("ativos")), [])
+    now = datetime.now()
+
+    sla_itens, f_item, ret_itens, impl_itens = [], [], [], []
+    rec_por: Counter = Counter()
+    f_tags = Counter()
+    fila_hoje: set[int] = set()
+
+    for t in ativos:
+        if not isinstance(t, dict) or t.get("id") is None:
+            continue
+        tid = int(t["id"])
+        just = (t.get("justification") or "").strip()
+        just_low = just.lower()
+        tags = _tags_de(t)
+        status = t.get("status") or ""
+        last, autor = _ultima_acao(t)
+        base = last or parse_date(t.get("lastActionDate")) \
+            or parse_date(t.get("lastUpdate")) or parse_date(t.get("createdDate"))
+        horas = hours_between(base, now) if base else None
+        aguarda_interno = (
+            just_low.startswith("dev")
+            or status.lower().startswith("dev")
+            or "retorno de fornecedor" in just_low
+            or "retorno do cliente" in just_low
+            or "sugest" in just_low
+        )
+        cliente = client_name(t)
+        assunto = clean(t.get("subject") or "")
+        sv = " / ".join(x for x in [t.get("serviceFirstLevel"), t.get("serviceSecondLevel")] if x)
+
+        def dicio(**extra):
+            item = {
+                "id": tid, "cliente": cliente, "assunto": assunto, "servico": sv,
+                "status": just or status,
+                "ultima_acao": base.strftime("%d/%m/%Y %H:%M") if base else "",
+                "por": autor,
+                "horas": round(horas, 1) if horas is not None else None,
+            }
+            item.update(extra)
+            return item
+
+        if (not aguarda_interno) and (status == "Novo" or autor == "cliente") \
+                and horas is not None and horas > 1:
+            sla_itens.append(dicio())
+
+        if (not aguarda_interno) and base and base.date() == now.date() \
+                and (status == "Novo" or autor == "cliente"):
+            fila_hoje.add(tid)
+
+        f = [x for x in tags if x.startswith("fornecedor")]
+        if (not just_low.startswith("dev") and not status.lower().startswith("dev")) \
+                and ("retorno de fornecedor" in just_low or f):
+            if f:
+                for x in f:
+                    f_tags[x] += 1
+            else:
+                f_tags["(retorno de fornecedor)"] += 1
+            f_item.append(dicio(dias=round(horas / 24, 1) if horas is not None else None))
+
+        if "retorno do cliente - encerramento" in just_low:
+            prazo = (base + timedelta(days=5)) if base else None
+            restantes = ((hours_between(now, prazo) or 0) / 24) if prazo else None
+            ret_itens.append(dicio(
+                prazo=prazo.strftime("%d/%m/%Y") if prazo else "",
+                restantes=round(restantes, 1) if restantes is not None else None,
+            ))
+
+        if any(x in tags for x in ("implantação", "implantacao", "implantacao_em_andamento")) \
+                or cliente_implantado(cliente):
+            impl_itens.append(dicio())
+
+        if "reclamacao_cliente" in tags:
+            ow = ((t.get("owner") or {}).get("email") or "").lower() or "*"
+            rec_por[ow] += 1
+
+    sla_itens.sort(key=lambda x: x["horas"] or 0, reverse=True)
+    f_item.sort(key=lambda x: (x.get("dias") or 0), reverse=True)
+    ret_itens.sort(key=lambda x: (x.get("restantes") if x.get("restantes") is not None else 99))
+    impl_itens.sort(key=lambda x: (x["cliente"] or "").lower())
+    fila = len(fila_hoje)
+
+    return {
+        "gerado_em": now.isoformat(timespec="seconds"),
+        "implantados_config": len(carregar_implantados()),
+        "sla": {"exigidos": len(sla_itens), "itens": sla_itens[:60]},
+        "fila": {"hoje": fila, "limite": 15, "reforco": fila > 15},
+        "fornecedor": {
+            "total": len(f_item),
+            "por_fornecedor": dict(f_tags.most_common()),
+            "itens": f_item[:60],
+        },
+        "retorno_encerrar": {
+            "total": len(ret_itens),
+            "perto_prazo": sum(1 for x in ret_itens if (x.get("restantes") or 99) <= 3),
+            "itens": ret_itens[:60],
+        },
+        "implantacao": {"total": len(impl_itens), "itens": impl_itens[:60]},
+        "reclamacoes": {
+            "total": sum(rec_por.values()),
+            "por_agente": dict(rec_por),
+        },
+    }
+
+
 def build_ranking(incluir_dev: bool = False) -> dict:
     """Comparativo por atendente: carga, tempo medio parado, FCR, reaberturas e CSAT/NPS.
 
@@ -1071,8 +1324,23 @@ def build_ranking(incluir_dev: bool = False) -> dict:
         infos = [build_ticket_info(t, now) for t in ativos]
         ids_tempo = [t.hours_idle for t in infos if t.hours_idle is not None]
         criticos = sum(1 for t in infos if t.level == "CRITICO")
+        antigos = sum(1 for t in infos if (t.hours_idle or 0) > 168)
         fcr = sum(1 for t in resolvidos if t.get("resolvedInFirstCall"))
         reab = sum(1 for t in resolvidos if t.get("reopenedIn"))
+        hoje_dt = now.date()
+        k_fila = k_rec = k_imp = k_f = 0
+        for ti in infos:
+            tags = _tags_de(ti.raw)
+            if ti.last_action and ti.last_action.date() == hoje_dt and \
+                    (ti.raw.get("status") == "Novo" or _ultima_acao(ti.raw)[1] == "cliente"):
+                k_fila += 1
+            if "reclamacao_cliente" in tags:
+                k_rec += 1
+            if any(x in tags for x in ("implantação", "implantacao", "implantacao_em_andamento")):
+                k_imp += 1
+            if any(x.startswith("fornecedor") for x in tags) or \
+                    "retorno de fornecedor" in str(ti.raw.get("justification") or "").lower():
+                k_f += 1
         c = csat.get(email, {})
         sat, insat = c.get("sat", 0), c.get("insat", 0)
         resp = sat + insat
@@ -1086,6 +1354,11 @@ def build_ranking(incluir_dev: bool = False) -> dict:
             "papel": papel,
             "ativos": len(ativos),
             "criticos": criticos,
+            "antigos_7d": antigos,
+            "fila_hoje": k_fila,
+            "reclamacoes": k_rec,
+            "implantacao": k_imp,
+            "fornecedor": k_f,
             "tempo_medio_parado": round(sum(ids_tempo) / len(ids_tempo), 1) if ids_tempo else None,
             "resolvidos": len(resolvidos),
             "fcr": fcr,
