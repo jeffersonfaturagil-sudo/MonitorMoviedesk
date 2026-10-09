@@ -385,16 +385,36 @@ function tabelaPendencias(p) {
     return `<h3 style="margin:18px 0 6px;font-size:14px">${titulo} <span class="muted">(${(lista||[]).length})</span></h3>
       ${itens ? `<ul style="margin:0;padding-left:20px;line-height:1.7;font-size:13.5px">${itens}</ul>` : '<p class="muted" style="margin:0;font-size:13.5px">—</p>'}`;
   };
+  const p = ag.periodo || {};
+  const fech = p.fechados || [];
+  const aviso = `<div style="background:#fff7ed;border:1px solid #fdba74;border-left:5px solid #f97316;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:13px;line-height:1.6">
+    <b>Como funciona a agenda</b>
+    <ul style="margin:6px 0 0;padding-left:20px">
+      <li>Mostra os tickets <b>resolvidos/encerrados</b> desde o <b>último dia útil</b> até ontem —
+          ela <b>pula sábado, domingo e feriados</b>.</li>
+      <li><b>Consulte todo dia útil pela manhã.</b> Se você não consultar por alguns dias
+          (fim de semana ou feriado), ao voltar ela <b>junta tudo</b> desde o último dia útil
+          — nenhum ticket fica de fora.</li>
+      <li>Ex.: resolvidos de sexta (09/10) só aparecem na próxima consulta após o feriado
+          (terça 13/10), junto com sábado, domingo e segunda (feriado).</li>
+      <li>Feriados considerados: nacionais + os cadastrados em <code>feriados.txt</code>.</li>
+    </ul>
+    <div style="margin-top:8px">
+      <b>Período desta agenda:</b> ${esc(p.de || "—")} até ${esc(p.ate || "—")}
+      (${p.dias || 0} dia(s)).
+      ${fech.length ? `<span class="muted">Dias pulados: ${fech.map(esc).join(", ")}.</span>` : ""}
+    </div>
+  </div>`;
   return `
   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
     <button id="btnCopiar" style="background:#0d9488;color:#fff">Copiar texto da agenda</button>
     <button id="btnRestaurarModelo" style="background:#6b7280;color:#fff">Restaurar modelo padrão</button>
-    <span class="muted" style="font-size:13px">Data: ${esc(ag.data)} • Resolvidos ${r.resolvidos} • Em atendimento ${r.em_atendimento} • Parados ${r.parados} • Fora da carga ${r.fora_carga}</span>
+    <span class="muted" style="font-size:13px">Técnico: ${esc(ag.tecnico || "—")} • Data: ${esc(ag.data)} • Período: ${esc(p.de || "—")} a ${esc(p.ate || "—")} • Resolvidos ${r.resolvidos} • Em atendimento ${r.em_atendimento} • Parados ${r.parados} • Fora da carga ${r.fora_carga}</span>
   </div>
+  ${aviso}
   <textarea id="agendaTexto" rows="24" spellcheck="false" style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:14px;width:100%;white-space:pre-wrap;font-size:13px;line-height:1.6;font-family:Consolas,Menlo,monospace">${esc(ag.texto)}</textarea>
-  ${bloco("🎉 Tickets resolvidos no dia", ag.resolvidos, x => `<b>#${x.id}</b> — ${esc(x.cliente)} — ${esc(x.assunto)}`)}
-  ${bloco("🎉 Tickets resolvidos ontem", ag.resolvidos_ontem, x => `<b>#${x.id}</b> — ${esc(x.cliente)} — ${esc(x.assunto)}`)}
-  ${bloco("⏭️ Em atendimento (interação nos últimos2 dias e aberto)", ag.em_atendimento, x => `<b>#${x.id}</b> — ${esc(x.justification || x.status)} — ${esc(x.cliente)}`)}
+  ${bloco(`🎉 Tickets resolvidos/encerrados (${p.de || "—"} a ${p.ate || "—"})`, ag.resolvidos, x => `<b>#${x.id}</b> — ${esc(x.cliente)} — ${esc(x.assunto)}`)}
+  ${bloco("⏭️ Em atendimento (interação nos últimos 2 dias e aberto)", ag.em_atendimento, x => `<b>#${x.id}</b> — ${esc(x.justification || x.status)} — ${esc(x.cliente)}`)}
   ${bloco("📎 Interagiu no dia", ag.interagiu, x => `<b>#${x.id}</b> — ${esc(x.status)} — ${esc(x.cliente)}`)}
   ${bloco("🤝 Participação fora da carga (ativos)", ag.fora_carga, x => `<b>#${x.id}</b> — ${esc(x.justification || x.status)} — ${esc(x.cliente)} — ${esc(x.assunto)}`)}`;
 }
