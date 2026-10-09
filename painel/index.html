@@ -103,6 +103,7 @@
     <button class="tab" data-tab="fornecedor">Fornecedor <span class="cnt" id="cFornec"></span></button>
     <button class="tab" data-tab="encerrar">Encerrar 5d <span class="cnt" id="cEncerrar"></span></button>
     <button class="tab" data-tab="implantacao">Implantação <span class="cnt" id="cImplant"></span></button>
+    <button class="tab" data-tab="processos">Processos</button>
     <button class="tab" data-tab="ranking">Equipe / Ranking</button>
     <button class="tab" data-tab="ok">OK <span class="cnt" id="cOk"></span></button>
   </div>
@@ -147,6 +148,12 @@ let macroJobTimer = null;
 let rankingDev = false;
 let plantaoOrdemPadrao = [];
 let indicadores = null;
+let procDados = null;
+let procTags = [];
+let procQ = "";
+let procTime = "";
+let procTag = "";
+let procErro = "";
 let servicoSel = localStorage.getItem("servicoSel") || "";
 
 function servicoRaiz(x) {
@@ -320,8 +327,10 @@ function tabelaTickets(lista) {
 function sugestaoBotoes(t) {
   const btn = "padding:3px 7px;border:1px solid var(--border);border-radius:6px;font-size:11.5px;cursor:pointer;background:#fff";
   const aberto = parecidos[t.id] && !parecidos[t.id].carregando ? ";background:#eef6ff" : "";
+  const servico = (t.servico || "").split("/")[0].trim() || t.assunto;
   return `<button class="btnParecidos" data-id="${t.id}" style="${btn}${aberto}">💡 Parecidos</button>
-    <br><button class="btnParecidosAssunto" data-id="${t.id}" style="${btn};margin-top:3px">Mesmo assunto</button>`;
+    <br><button class="btnParecidosAssunto" data-id="${t.id}" style="${btn};margin-top:3px">Mesmo assunto</button>
+    <br><a href="#processos" data-proc="${esc(servico)}" title="Abrir o passo a passo deste serviço" style="${btn};display:inline-block;margin-top:3px;text-decoration:none">📘 Processo</a>`;
 }
 
 async function verParecidos(id, modo) {
@@ -553,6 +562,11 @@ function render() {
     $("painel").innerHTML = aba === "sla1h" ? telaSla1h()
       : aba === "fornecedor" ? telaFornecedor()
         : aba === "encerrar" ? telaEncerrar() : telaImplantacao();
+    return;
+  }
+  if (aba === "processos") {
+    $("painel").innerHTML = telaProcessos();
+    if (!procDados) carregarProcessos(); else renderizarProcessos();
     return;
   }
   if (aba === "mesclas") {
@@ -1150,6 +1164,85 @@ async function carregarIndicadores() {
   render();
 }
 
+function nomeTime(t) {
+  return t === "dev" ? "Dev" : t === "implantacao" ? "Implantação" : t === "coordenacao" ? "Coordenação" : "Suporte";
+}
+
+function telaProcessos() {
+  const sel = `<select id="procTime" style="padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px">
+    <option value="">Agente: todos</option>
+    <option value="suporte" ${procTime === "suporte" ? "selected" : ""}>Agente: Suporte</option>
+    <option value="dev" ${procTime === "dev" ? "selected" : ""}>Agente: Dev</option>
+    <option value="implantacao" ${procTime === "implantacao" ? "selected" : ""}>Agente: Implantação</option>
+    <option value="coordenacao" ${procTime === "coordenacao" ? "selected" : ""}>Agente: Coordenação</option>
+  </select>`;
+  const chips = procTags.map(t =>
+    `<a href="#" data-tag="${esc(t)}" style="display:inline-block;margin:0 4px 4px 0;padding:2px 8px;border-radius:12px;text-decoration:none;font-size:12px;background:${procTag === t ? "var(--azul,#2b6cb0)" : "#eef2f7"};color:${procTag === t ? "#fff" : "#334155"}">${esc(t)}${procTag === t ? " ✕" : ""}</a>`).join("");
+  return `<p class="muted" style="margin:0 0 10px;font-size:13px">Guia local de processos do time: digite o caso ("erro de faturamento", "credenciamento boleto", "e-mail NFS-e") e veja o passo a passo sem abrir documento. Os arquivos ficam em <code>painel/processos/</code> — edite o texto e o painel lê na hora.</p>
+  <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+    <input id="procQ" value="${esc(procQ)}" placeholder="O que faço nesse caso? Ex.: erro de faturamento, boleto, NFS-e, fraude" style="flex:1;min-width:260px;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px">
+    ${sel}
+  </div>
+  <div style="margin-bottom:10px">${chips || '<span class="muted">Sem filtros de assunto.</span>'}</div>
+  <div id="procResult"><div class="empty">Carregando processos…</div></div>`;
+}
+
+async function carregarProcessos() {
+  try {
+    const r = await fetch("/api/processos");
+    const j = await r.json();
+    if (j.erro) throw new Error(j.erro);
+    procDados = j.processos || [];
+    procTags = j.tags || [];
+  } catch (e) {
+    procDados = [];
+    procTags = [];
+    procErro = String(e.message || e);
+  }
+  renderizarProcessos();
+}
+
+async function buscarProcessos() {
+  procQ = (($("procQ") || {}).value || "").trim();
+  procTime = (($("procTime") || {}).value || "");
+  const url = "/api/processos?q=" + encodeURIComponent(procQ)
+    + (procTime ? "&time=" + encodeURIComponent(procTime) : "")
+    + (procTag ? "&tag=" + encodeURIComponent(procTag) : "");
+  $("procResult").innerHTML = `<div class="empty">Buscando…</div>`;
+  try {
+    const r = await fetch(url);
+    const j = await r.json();
+    if (j.erro) throw new Error(j.erro);
+    procDados = j.processos || [];
+    procTags = j.tags || [];
+  } catch (e) {
+    procDados = [];
+    procErro = String(e.message || e);
+  }
+  renderizarProcessos();
+}
+
+function renderizarProcessos() {
+  const alvo = $("procResult");
+  if (!alvo) return;
+  if (procErro) { alvo.innerHTML = `<div class="empty">Falha ao carregar processos: ${esc(procErro)}</div>`; return; }
+  if (!procDados.length) { alvo.innerHTML = `<div class="empty">Nenhum processo encontrado${procQ ? " para \"" + esc(procQ) + "\"" : ""}. Tente outros termos ou limpe os filtros.</div>`; return; }
+  alvo.innerHTML = procDados.map(doc => {
+    const times = doc.times.map(t => `<span class="pill blue" title="Time">${nomeTime(t)}</span>`).join(" ");
+    const tags = doc.tags.map(t => `<span class="pill gray">${esc(t)}</span>`).join(" ");
+    const secoes = doc.secoes.map((s, i) => `
+      <details ${i === 0 ? "open" : ""} style="margin:6px 0">
+        <summary style="cursor:pointer;font-weight:600">${esc(s.titulo)}</summary>
+        <div style="white-space:pre-wrap;font-size:13px;line-height:1.55;margin:6px 0 2px 14px;max-width:820px">${esc(s.texto)}</div>
+      </details>`).join("");
+    return `<div style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:10px;background:#fff">
+      <div style="font-weight:700;font-size:14px">${esc(doc.titulo)}</div>
+      <div style="margin:4px 0 8px;font-size:12px">${times} ${tags}</div>
+      ${secoes}
+    </div>`;
+  }).join("");
+}
+
 function linhaIndicador(i, web, extra) {
   const autor = i.por === "equipe" ? '<span class="pill green">equipe</span>'
     : i.por === "cliente" ? '<span class="pill red" title="Última ação do cliente">cliente</span>'
@@ -1533,6 +1626,27 @@ $("painel").addEventListener("click", async (e) => {
     render();
     return;
   }
+  const navTag = e.target.closest && e.target.closest("a[data-tag]");
+  if (navTag) {
+    e.preventDefault();
+    procTag = procTag === navTag.dataset.tag ? "" : navTag.dataset.tag;
+    render();
+    buscarProcessos();
+    return;
+  }
+  const navProc = e.target.closest && e.target.closest("a[data-proc]");
+  if (navProc) {
+    e.preventDefault();
+    procQ = navProc.dataset.proc;
+    procTime = "";
+    procTag = "";
+    document.querySelectorAll(".tab").forEach(x => x.classList.toggle("active", x.dataset.tab === "processos"));
+    aba = "processos";
+    history.replaceState(null, "", "#processos");
+    render();
+    buscarProcessos();
+    return;
+  }
   const thOrd = e.target.closest && e.target.closest("th.ord");
   if (thOrd) {
     const campo = thOrd.dataset.campo;
@@ -1601,6 +1715,7 @@ $("painel").addEventListener("keydown", (e) => {
   if (e.target.id === "buscaHist" && e.key === "Enter") { e.preventDefault(); buscarHist(); }
   if (e.target.id === "macroTicket" && e.key === "Enter") { e.preventDefault(); validarMacro(e.target.value); }
   if (e.target.id === "macroQ" && e.key === "Enter") { e.preventDefault(); buscarMacro(e.target.value); }
+  if (e.target.id === "procQ" && e.key === "Enter") { e.preventDefault(); buscarProcessos(); }
 });
 
 $("painel").addEventListener("change", (e) => {
@@ -1610,6 +1725,7 @@ $("painel").addEventListener("change", (e) => {
     ranking = null;
     render();
   }
+  if (e.target.id === "procTime") { buscarProcessos(); }
 });
 
 document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
@@ -1629,6 +1745,7 @@ if (abaHash && document.querySelector('.tab[data-tab="' + abaHash + '"]')) {
   await carregarAgentes();
   await carregarCache();
   carregarIndicadores();
+  carregarProcessos();
 })();
 
 </script>
