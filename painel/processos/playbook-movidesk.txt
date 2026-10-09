@@ -1,0 +1,279 @@
+Playbook da ferramenta Helpdesk/Suporte (Movidesk)
+
+
+LINKS
+
+Portal de Atendimento: https://atendimento.faturagil.com.br/
+
+Base de Conhecimento: https://atendimento.faturagil.com.br/kb
+
+
+
+EQUIPES
+
+Comercial / Negócios
+Implantação - Onboarding, treinamento
+Suporte - Chat, Tickets
+Engenharia e Tecnologia
+
+
+
+GRUPOS DE CHAT
+
+São os departamentos visíveis no Chat dentro da Plataforma FaturÁgil.
+
+Atendimento ao Cliente
+Financeiro
+Comercial
+
+
+
+DEPARTAMENTOS
+
+Atendimento ao Cliente
+Financeiro
+Comercial
+Marketing
+DP
+RH
+Pessoas
+
+
+
+CLASSIFICAÇÃO
+
+FaturÁgil PRO
+FaturÁgil PRO - Em implantação
+FaturÁgil PREMIUM
+FaturÁgil PREMIUM - Em implantação
+
+- identificação da carteira do cliente
+- possibilidade de usar módulo de success... considera na jornada
+
+Após concluir o onboarding:
+> alterar manualmente de "FaturÁgil PRO - Em implantação" para "FaturÁgil PRO"
+> alterar manualmente de "FaturÁgil PREMIUM - Em implantação" para "FaturÁgil PREMIUM"
+
+
+
+SEGMENTOS
+
+São os segmentos de mercado que a FaturÁgil atende
+
+Software House
+Contabilidade
+Agência
+Clubes
+Associações
+Consultoria
+Advocacia
+
+- É um campo adicional no cadastro de Empresas (pessoas do tipo empresa)
+
+
+
+SERVIÇOS
+
+São os serviços que a FaturÁgil presta dentro de cada departamento.
+
+Atendimento ao Cliente
+    Clientes
+    Assinaturas e Contratos
+    Planos
+    Faturamento
+    Boleto
+    Envio de Boletos por E-mail
+    Lembretes e Régua de Cobrança
+    Configuração de E-mail SMTP
+    Cartão de Crédito
+    Nota Fiscal (NFS-e)
+    Link de Pagamento / Checkout
+    Receitas e Despesas
+    Planos de Conta
+    Centros de Custo
+    DRE
+    Relatórios
+    Atualização de certificado
+    API
+    Parametrização
+
+Serviços
+    Implantação
+        Acompanhamento Migração
+        Calls
+        Consultoria/Reimplantação
+        Onboarding 4.0
+        Welcome Onboarding
+
+Financeiro
+    Clientes
+        Atualização de cadastro
+        Alteração de vencimento
+        Cancelamento
+        Reenvio de fatura/boleto
+        Conta suspensa
+        Negociação financeira
+        Nova contratação
+
+Comercial
+    Indicação de cliente
+    Upgrade
+    Nova contratação (grupo empresarial que contrata mais licença)
+
+
+
+URGÊNCIA
+
+É a necessidade/pressa de requerer solução imediata.
+
+baixa
+média
+alta
+urgente
+
+
+
+CATEGORIAS
+
+- dúvida
+- solicitação de serviço
+- sugestão
+- elogio
+- instabilidade (ex: problemas com fornecedores [prefeitura, tecnospeed, pjbank, bancos])
+- problema de sistema (causado por atualizações ou novas funcionalidades)
+- problema operacional (causado por mau uso por parte do usuário que impactam na operação do cliente)
+
+
+
+STATUS
+
+Novo
+Aguardando
+Em atendimento
+Implantação
+Resolvido
+Fechado
+Cancelado
+
+
+JUSTIFICATIVA DO STATUS
+
+A justificativa é uma subcategoria do status.
+                                     
+Novo » Implantação liberada
+
+
+
+Aguardando » Equipe de análise
+em análise para aprovação se realiza ou não o desenvolvimento
+Aguardando » Equipe de desenvolvimento
+já foi aprovado pela análise e encontra-se em desenvolvimento
+Aguardando » Liberação de versão
+já foi desenvolvido e está aguardando a atualização de versão
+Aguardando » Retorno de Fornecedor
+aguardando devolutiva/feedback de fornecedor: tecnospeed, pjbank etc
+Aguardando » Retorno do cliente - Para continuidade
+aguardando feedback do cliente p/ dar sequência no atendimento;
+enviamos alguma instrução ao cliente e esperamos retorno antes de Resolver;
+caso o cliente não responda, o ideal é LIGAR para coletar o feedback. 
+Aguardando » Retorno do cliente - Para encerramento
+já foi resolvido, mas estamos aguardando feedback do cliente caso ele tenha alguma consideração adicional.
+se o cliente não responder em 5 dias, o ticket é Resolvido automaticamente pelo sistema.
+Aguardando » Aprovação de orçamento
+removido provisoriamente
+
+
+Implantação » Agendar onboarding
+etapa de 1º contato com o cliente para agendar a Call 1
+Implantação » Call 1 - Alinhamento
+
+Implantação » Call 2
+
+Implantação » Call 3
+
+Implantação » Call 4
+
+Implantação » Call Extra
+requer aprovação da Diretoria - somente se necessário
+Implantação » Onboarding Assistido
+a responsabilidade de implantação é do parceiro. Ex: PRESTIGE (PORTAL DA CIDADE)
+Implantação » Devolutiva Vendas
+foi necessário retornar a equipe de vendas para algum alinhamento de valores
+Implantação » Pedido de Churn
+cliente cancelou o serviço durante a implantação
+
+
+
+
+
+
+# Ao agendar a 1ª reunião
+
+- o assunto do ticket deve ser "Calls com o especialista"
+ex: Projeto de Implantação FaturÁgil + ASSESPRO-PR | Calls com o especialista
+
+- o assunto do Google Agenda deve ser "FaturÁgil 1/4 | nome do cliente"
+ex: FaturÁgil 1/4 | ASSESPRO-PR
+
+- o status será atualizado para: Implantação » Call 1 - Alinhamento
+
+
+# Depois de finalizar a 1ª reunião, e agendar a 2ª reunião
+
+- o assunto do ticket deve ser "Consultoria 1"
+ex: Projeto de Implantação FaturÁgil + ASSESPRO-PR | Consultoria 1
+
+- o assunto do Google Agenda deve ser "Onboarding FaturÁgil 2/4 | nome do cliente"
+ex: FaturÁgil 2/4 | ASSESPRO-PR
+
+- o status será atualizado para: Implantação » Call 2
+
+
+
+
+
+FLUXO DIÁRIO DE ATENDIMENTO
+
+# Chat
+- no início do dia
+- ficar online para atendimento
+
+
+# Novo
+- no início do dia
+- iniciar atendimento
+
+
+# Em Atendimento
+- no início do dia
+- continuar o atendimento
+
+
+# Aguardando » Retorno do fornecedor
+- no início do dia
+- conferir na conta do FaturÁgil do cliente se houve algum avanço
+- enviar atualização ao cliente que estamos dando continuidade (mesmo ainda não tendo contatado o fornecedor/tecnospeed)
+- continuar atendimento no CHAT da Tecnospeed
+
+
+# Aguardando » Retorno do Cliente
+- ao final do dia
+- casos que sugerimos uma solução
+- perguntar ao cliente se ele conseguiu verificar
+-> se em 3 dias o cliente não der o OK, concluir
+
+
+# Serviços » Implantação » Onboarding
+- no início do dia
+- continuar o atendimento
+- analisar pendências do cliente
+
+
+
+
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
