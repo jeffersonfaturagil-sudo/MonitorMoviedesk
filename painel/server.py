@@ -377,6 +377,10 @@ class Handler(BaseHTTPRequestHandler):
 
             incluir_dev = (params.get("dev") or "").lower() in ("1", "true", "sim", "on")
             self._json(build_ranking(incluir_dev=incluir_dev))
+        elif path == "/api/indicadores":
+            from dados import build_indicadores
+
+            self._json(build_indicadores())
         elif path == "/api/solucao":
             self._solucao(params.get("id") or "")
         elif path == "/api/historico/status":
