@@ -1,0 +1,352 @@
+Guia de Implantação
+Usado para guiar o cliente na videochamada de treinamento/implantação. 
+Orienta qual tela o cliente deve acessar, uma após a outra.
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# HELP DESK
+
+https://atendimento.faturagil.com.br/
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# BASE DE CONHECIMENTO
+
+https://atendimento.faturagil.com.br/kb/article/199704/ola-que-bom-te-ver-por-aqui
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# PASTAS NO DRIVE
+
+Suporte Embradev FaturÁgil
+Clientes implantação / treinamento
+Manuais
+NFS-e - nota fiscal de serviço eletrônica - Tecnospeed
+PJBank - Boleto, Cartão e Conta Digital
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+KICK OFF + ALINHAMENTO + TREINAMENTO
+CRIAR CONTA/ORGANIZAÇÃO (antes da call)
+
+
+
+
+1) e-mail de boas vindas (MARCELO / CARLOS)
+- enviar ação de boas vindas ao cliente
+- marcelo apresenta o Ricardo no ticket 
+- informar ao Ricardo do cliente novo
+
+2) apresentação do Ricardo e pedir dados do cliente
+- enviar ação de boas vindas / apresentação
+- agendar treinamento
+- pedir os dados do cliente via email
+https://docs.google.com/document/d/1545QYBvGrNg1GHhf-RlTMz8QRJEL6qqPc8LFNSDFd9w/edit
+
+3) cadastrar a empresa no FaturÁgil
+- nova organização / cadastrar endereço
+- incluir logo
+
+4) e-mail com login/senha e manual
+https://docs.google.com/document/d/1aIMXfQWuPVBf7InAK0pBpP7mWb-vdwMcGwtZLJvLh54/edit
+
+5) cadastrar meio e pagamento
+- cadastrar conta corrente no menu Financeiro
+- banco, agência, conta
+- transferência / depósito
+
+Quando o cliente for receber na conta PF preencher o formulário ‘Autorização para Crédito em Conta de Terceiros’ localizado na pasta: https://drive.google.com/drive/folders/1mjLRGsih5Ol0mgA3zHHVHaBbgWJYGnxN
+
+6) configuração da nota fiscal
+- solicitar nfs-e, e-certificado, e-cnpj
+- se o cliente já enviou a última nota emitida, habilitar a emissão de nota:
+menu: configurações > nota fiscal [na emissão, após pagamento, não emite]
+- solicitar liberação para emissão na Prefeitura (conferir tabela de municípios)
+- solicitar RPS no portal da Prefeitura (conferir tabela de municípios)
+
+7) Credenciamento Boleto (opcional)
+Modelo de e-mail para abrir TICKET na PJBank: PJBank - Abrir Ticket p/ credenciamento Boleto - empresa
+
+8) Credenciamento para cartão de crédito (opcional)
+Modelo de e-mail para abrir TICKET na PJBank: PJBank - Abrir Ticket p/ credenciamento cartão de crédito - empresa
+
+
+
+
+ETAPAS
+
+1. cobranças
+Importação clientes, assinaturas, etc
+
+2. nota fiscal de serviço (opcional)
+clientes, assinaturas, etc
+
+3. contas a pagar / receber
+receitas e gastos, DRE, plano de contas
+
+
+
+ALINHAMENTO / TREINAMENTO
+
+# alinhamento de expectativas
+cliente vai responder o que ele espera do FaturÁgil, anotar no arquivo jornada.
+
+# Canais de suporte e atendimento: 
+- Chat, E-mail atendimento@faturagil.com.br, Telefone 45 3112-0003, Help-Desk: https://atendimento.faturagil.com.br/ 
+
+# reforçando recebimento do boletos e cartão 
+- boleto D+2 (recebimento em 2 dias úteis)
+- cartão D+32 (opcional)  (recebimento em 32 dias diretos)
+- pode acontecer de, apenas no primeiro repasse, demorar um ou dois dias a mais por causa da validação da conta:
+cruzamento dos dados os CNPJ com os dados da conta corrente
+
+# configurar controle de competência
+- pré-pago (vencimento no mesmo mês da competência)  ex: competência 04/2021 vencimento 22/04/2021
+ou 
+- pós-pago 1M, 2M (vencimento é no mês seguinte da competência) ex: competência 04/2021 vencimento 10/05/2021
+
+# nota fiscal (opcional)
+- forma de emissão padrão: na cobrança (faturamento) / após pagamento / manual (não emite)
+[configurar na hora] menu: configurações > nota fiscal
+
+- certificado digital e-CNPJ A1 - solicitar ao contador
+
+- solicitar: liberação para emissão em produção / liberação do usuário em homologação
+https://docs.google.com/spreadsheets/d/18qRjInHv_b32EyEAJkH9saO0OYWpXIZ-Km1nAGEag8Q/edit#gid=2138358137
+
+- solicitar RPS na prefeitura
+1. conferir a prefeitura: https://drive.google.com/drive/folders/1NnpzV0vV8As2jsOMNEU5axjU-BLf3Bx4
+2. enviar instruções ao cliente por email: https://docs.google.com/document/d/1U7xO_z0FCmNP3s_KB85daXJrJs8J8sqb_MYwOYiqjWw/edit
+[cascavel, toledo]
+
+* API prefeitura / Tecnospeed
+- solicitar: configuração da numeração automática do RPS, para não gerar duplicidade na numeração
+
+Particularidades da Prefeitura: 
+Marechal Cândido Rondon PR – a logo é necessário cadastrar no Portal da Prefeitura.
+Cascavel PR – não cancela nota via Webservice: necessário cancelar no Portal da Prefeitura.
+Toledo PR – enviar a 1ª nota em homologação, cancelar esta, e depois está habilitado para produção.
+
+# MEI (opcional)
+- CNH ou RG
+- certificado MEI (http://www22.receita.fazenda.gov.br/inscricaomei/private/pages/certificado_acesso.jsf)
+- cartão CNPJ - baixar: http://servicos.receita.fazenda.gov.br/Servicos/cnpjreva/Cnpjreva_Comprovante.asp
+
+# Conselho de classe: OAB / CREA / CAU / CRC (opcional) (quanto não tem CNPJ)
+Precisamos desses 3 documentos para validar seu recebimento via boleto: 
+- foto carteirinha CAU*
+- certidão de Regularidade junto ao CAU* (órgão de classe/site)
+- comprovante de endereço
+*trocar pela sigla do órgão de classe, ao enviar para o cliente
+
+# se empresa for ASSOCIAÇÃO (opcional)
+FaturÁgil 💰⚡ para associações
+a) Formulário de credenciamento.
+b) Atos constitutivos da instituição.
+c) Ata de eleição da diretoria atualizada, se não constar nos atos constitutivos.
+d) Cartão CNPJ http://servicos.receita.fazenda.gov.br/Servicos/cnpjreva/Cnpjreva_Comprovante.asp
+e) Breve texto de apresentação da instituição com serviços prestados.
+
+# conta digital pjbank (opcional)
+- credenciamento: contrato social / cadastro dos administradores
+- aprovação do cadastro: 7 dias úteis
+- sócio único (MEI): enviar termo de aprovador único
+
+
+
+
+ROTEIRO DE TREINAMENTO 
+
+ETAPA 01 - COBRANÇAS
+
+# grupo de faturamento
+menu: configurações > grupo de faturamento
+configuração do faturamento no automático
+programação de quantos dias quer que a cobrança seja emitida antecipadamente
+
+# lembretes e alertas (template) “é nessa tela que você configura a mensagem que o cliente vai receber no e-mail”
+menu: configurações > lembretes e alertas
+template do e-mail que é enviado ao cliente
+
+# contas de e-mail
+menu: configurações > contas de e-mail
+configurar conta de e-mail e smtp (se for Gmail, vai receber um email Google perguntando se foi você )
+https://drive.google.com/drive/folders/1sdw3fPbbA7nXw05xbZZNXOiXX51L5C17
+
+# contas correntes
+menu: financeiro > contas e saldos
+cadastrar as contas correntes
+
+# meio de pagamento
+menu: configurações > meios de pagamento
+- banco, agência e conta
+- conferir percentual de juros e multa (padrão legislação multa 2%, juros 1%)
+
+# plano de contas
+menu: configurações > financeiro > planos de conta
+são as “categorias” de receitas e despesas
+- incluir na receita operacional
+
+# produtos/serviços
+menu: planos > produtos e serviços
+produtos e serviços que sua empresa presta à seus clientes
+- vincular os planos de conta
+
+# planos (opcional - usado mais por quem tem valores iguais para os clientes)
+menu: planos > planos
+cadastrar as mensalidades
+
+# link de pagamento (opcional)
+menu: planos > link de pagamento
+gera uma página de checkout com o plano a ser pago pelo cliente
+
+# perfil do cliente (é o segmento dos clientes)
+menu: configurações > cliente > perfil do cliente
+segmentação de clientes
+
+# tags
+menu: configurações > cliente > tags
+algum outro tipo de classificação dos clientes além do perfil de clientes
+
+# clientes e assinaturas/contratos
+menu: clientes / fornecedores
+cadastro do cliente e endereço
+> aba “financeiro”
+meio de pagamento
+dia da cobrança/vencimento
+assinaturas/contratos
+> importações:
+importação de clientes (opcional)
+importação de assinaturas (opcional)
+
+# assinaturas/contratos
+menu: assinaturas e serviços / assinaturas e contratos
+cadastro de mensalidades
+
+
+# lançamentos extras / treinar quando for contabilidade
+menu: faturamento > lançamentos extras
+lançamentos
+
+
+ETAPA 02 - NOTA FISCAL *** PODE ESTAR JUNTO COM A ETAPA 01
+
+# nota fiscal (opcional)
+menu: configurações > nota fiscal
+CNAE
+tipo de tributação
+alíquotas
+certificado digital e-CNPJ A1
+solicitação de liberação para emissão em produção
+solicitação de RPS na prefeitura
+
+
+
+# FLUXO DE FATURAMENTO
+
+1. faturamento
+menu: faturamento / faturas
+realizar faturamento: automático, manual, faturas avulsa
+
+2. nota fiscal de serviço (opcional)
+menu: faturamento / notas de serviço
+emissão de notas
+
+3. cobranças e boletos
+menu: faturamento / faturas
+impressão dos boletos, alteração de vencimento, recebimento em carteira
+
+4. boletos por e-mail
+menu: faturamento / faturas
+envio do boleto por e-mail, histórico dos envios
+exibe se o e-mail não foi enviado
+
+
+ETAPA 03 - CONTAS, RECEITAS E DESPESAS
+
+# contas correntes
+menu: financeiro > contas e saldos
+cadastrar as contas correntes
+
+# plano de contas
+menu: configurações > financeiro > planos de conta
+são as “categorias” de receitas e despesas
+- incluir somente na receita operacional
+
+# centro de custo (opcional)
+menu: configurações > financeiro > centro de custo
+se faz essa gestão, por ex: informe os departamentos da empresa: administrativo, financeiro, rh, comercial
+
+# transações (entradas e saídas)
+menu: financeiros > receitas e gastos
+lançar despesas
+lançar receitas
+realizar transferências (movimentações)
+
+# DRE
+menu: relatórios > financeiros > DRE
+consultar relatório
+
+# Contas a Pagar
+menu: relatórios > financeiros > Contas a Pagar
+consultar relatório
+
+# Contas a Receber
+menu: relatórios > financeiros > Contas a Receber
+consultar relatório
+
+
+
+
+ENVIAR E-MAIL APÓS TREINAMENTO
+
+Assunto do e-mail: Onboarding FaturÁgil - NOME_CLIENTE
+
+Olá NOME_CLIENTE,
+
+Obrigado por participar do nosso onboarding.
+
+Suas tarefas a serem realizadas:
+- configurar o Meio de Pagamento: ITAÚ
+- configurar a nota fiscal e certificado A1
+- importar clientes
+- importar honorários
+- cadastrar fornecedores
+- lançar contas a pagar (despesas, salários, guias etc)
+
+
+> Na quinta, entro em contato para ver como está o andamento.
+
+
+Manual do sistema:
+https://drive.google.com/openhttps://drive.google.com/open?id=1HMmoLk49lHxP8BY0cwLjcAMDhMD1QaiLUtV4NY2xI88?id=1HMmoLk49lHxP8BY0cwLjcAMDhMD1QaiLUtV4NY2xI88
+
+
+NA SEQUÊNCIA, INCLUIR ROTEIRO DE TREINAMENTO.
+
+
+
+
+PRÓXIMAS ATIVIDADES
+
+Agendar próxima call 
+ 
+Enviar e-mail com as atividades/tarefas a serem realizadas pelo cliente.
+
+
+
+FEEDBACKS
+
+# pensar em algo p/ recebimentos pagseguro
+- data do crédito
+- taxa
+ideia: permitir alterar taxa/data
+
+
+
+
+
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
