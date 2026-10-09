@@ -99,6 +99,10 @@
     <button class="tab" data-tab="duvidas">Dúvidas / Histórico</button>
     <button class="tab" data-tab="horarios">Horários</button>
     <button class="tab" data-tab="macros">Macros <span class="cnt" id="cMacro"></span></button>
+    <button class="tab" data-tab="sla1h">SLA 1h <span class="cnt" id="cSla1h"></span></button>
+    <button class="tab" data-tab="fornecedor">Fornecedor <span class="cnt" id="cFornec"></span></button>
+    <button class="tab" data-tab="encerrar">Encerrar 5d <span class="cnt" id="cEncerrar"></span></button>
+    <button class="tab" data-tab="implantacao">Implantação <span class="cnt" id="cImplant"></span></button>
     <button class="tab" data-tab="ranking">Equipe / Ranking</button>
     <button class="tab" data-tab="ok">OK <span class="cnt" id="cOk"></span></button>
   </div>
@@ -142,6 +146,7 @@ let macroBuscaQ = "";
 let macroJobTimer = null;
 let rankingDev = false;
 let plantaoOrdemPadrao = [];
+let indicadores = null;
 let servicoSel = localStorage.getItem("servicoSel") || "";
 
 function servicoRaiz(x) {
@@ -249,7 +254,25 @@ function flagsTag(x) {
   }
   if (x.sla_real_ok === false) out += ` <span class="pill red" title="1ª resposta após o prazo do SLA">SLA resp. atrasada</span>`;
   else if (x.sla_real_ok === true) out += ` <span class="pill green" title="1ª resposta dentro do SLA">SLA resp. OK</span>`;
+  out += tagsTag(x) + recorrenteTag(x);
   return out;
+}
+function tagsTag(x) {
+  const map = { "reclamacao_cliente": ["red", "Reclamação"], "implantação": ["violet", "Implantação"], "implantacao": ["violet", "Implantação"], "implantacao_em_andamento": ["violet", "Implantação"] };
+  let out = "";
+  for (const tag of (x.tags || []).slice(0, 4)) {
+    const e = map[String(tag).toLowerCase()];
+    if (e) out += ` <span class="pill ${e[0]}" title="Tag do ticket">${esc(e[1])}</span>`;
+  }
+  const f = (x.tags || []).find(v => /^fornecedor/i.test(String(v)));
+  if (f) out += ` <span class="pill gray" title="Aguardando retorno do fornecedor/banco">Fornec. ${esc(String(f).replace(/^fornecedor[_-]?/i, ""))}</span>`;
+  if (x.implantado && !/Implantação/.test(out)) out += ` <span class="pill violet" title="Na lista local de clientes em implantação">Em implantação</span>`;
+  return out;
+}
+function recorrenteTag(x) {
+  const rc = x.recorrencia;
+  if (!rc || !rc.total) return "";
+  return ` <span class="pill ${rc.total >= 3 ? "red" : "amber"}" title="${rc.total} ocorrências do mesmo cliente/assunto${rc.ultima ? " • última resolução " + esc(rc.ultima) : ""}">Recorrente ${rc.total}×</span>`;
 }
 function vinculoDetalhe(x) {
   if (!x.vinculado) return "";
@@ -278,7 +301,7 @@ function tabelaTickets(lista) {
       <td>${linkTicket(t.id)}</td>
       <td>${esc(t.cliente)}${canalTag(t)}</td>
       <td>${esc(t.owner||"—")}${tempoAtendenteTag(t)}</td>
-      <td>${esc(t.assunto)}${flagsTag(t)}${vinculoDetalhe(t)}</td>
+      <td>${esc(t.assunto)}${flagsTag(t)}${checklistsDo(t)}${vinculoDetalhe(t)}</td>
       <td>${esc(t.ultima_acao)}</td>
       <td><b>${esc(t.parado_display)}</b>${slaTag(t)}</td>
       <td>${esc(t.justification || t.status)}</td>
@@ -517,6 +540,21 @@ function render() {
     $("painel").innerHTML = telaMacros();
     return;
   }
+  if (aba === "sla1h" || aba === "fornecedor" || aba === "encerrar" || aba === "implantacao") {
+    if (!indicadores) {
+      $("painel").innerHTML = `<div class="empty">Carregando indicadores operacionais…</div>`;
+      carregarIndicadores();
+      return;
+    }
+    if (indicadores.erro) {
+      $("painel").innerHTML = `<div class="empty">Falha ao carregar indicadores: ${esc(indicadores.erro)}</div>`;
+      return;
+    }
+    $("painel").innerHTML = aba === "sla1h" ? telaSla1h()
+      : aba === "fornecedor" ? telaFornecedor()
+        : aba === "encerrar" ? telaEncerrar() : telaImplantacao();
+    return;
+  }
   if (aba === "mesclas") {
     const k = mergeEscopo + "|" + agenteSel;
     if (!mergeDados || mergeKey !== k) {
@@ -559,6 +597,14 @@ function render() {
   $("cSla").textContent = `(${r.sla})`;
   $("cOk").textContent = `(${r.ok})`;
 
+  if (indicadores && !indicadores.erro) {
+    const set = (id, v) => { const el = $(id); if (el) el.textContent = v ? `(${v})` : ""; };
+    set("cSla1h", (indicadores.sla || {}).exigidos);
+    set("cFornec", (indicadores.fornecedor || {}).total);
+    set("cEncerrar", (indicadores.retorno_encerrar || {}).total);
+    set("cImplant", (indicadores.implantacao || {}).total);
+  }
+
   const d = new Date(dados.gerado_em);
   $("ultima").textContent = (dados.origem === "api" ? "Atualizado agora: " : "Cache de: ")
     + d.toLocaleString("pt-BR")
@@ -595,7 +641,7 @@ function render() {
   }
   const focoBusca = document.activeElement && document.activeElement.id === "buscaPend"
     ? document.activeElement.selectionStart : null;
-  $("painel").innerHTML = html;
+  $("painel").innerHTML = avisoIndicadores() + html;
   if (focoBusca !== null) {
     const inp = document.getElementById("buscaPend");
     if (inp) { inp.focus(); try { inp.setSelectionRange(focoBusca, focoBusca); } catch (e) {} }
@@ -1053,10 +1099,158 @@ function barraPct(pct) {
   return `<span style="display:inline-block;min-width:120px;vertical-align:middle"><span style="display:inline-block;width:70px;height:9px;background:#eee;border-radius:5px;overflow:hidden;vertical-align:middle"><span style="display:block;height:100%;width:${Math.max(0, Math.min(100, pct))}%;background:${cor}"></span></span> ${pct}%</span>`;
 }
 
+const CHECKLIST_STEPS = [
+  { re: /credenciamento|pjbank|c6|sicoob|sicredi|\binter\b|banco|banc[áa]rio/i, titulo: "Credenciamento / boleto banco",
+    passos: ["Confirmar cadastro com o gateway (PJBank, C6, Inter, Sicredi, Sicoob)",
+      "Validar conta/CNPJ e confirmar o ambiente",
+      "Agendar envio de boleto de teste (remessa)",
+      "Confirmar compensação e o retorno bancário",
+      "Comunicar credenciais e próximos passos ao cliente"] },
+  { re: /nfs|nota fiscal/i, titulo: "NFS-e",
+    passos: ["Validar ambiente (produção/homologação) e certificado",
+      "Conferir inscrição municipal e conta de serviço",
+      "Emitir nota de teste (RPS)",
+      "Validar o retorno da prefeitura",
+      "Orientar emissão/faturamento e cancelamento"] },
+  { re: /api|integra[çc]|conector/i, titulo: "API / Integração",
+    passos: ["Confirmar ambiente, token e permissões",
+      "Validar na homologação os endpoints usados",
+      "Registrar credenciais/contrato do cliente",
+      "Configurar retorno/callback",
+      "Validar o primeiro processamento real"] },
+  { re: /fatur|erro de faturamento/i, titulo: "Faturamento",
+    passos: ["Conferir dados bancários cadastrados",
+      "Verificar situação do boleto (PIX/remessa/PARTIAL_LIQUIDATED)",
+      "Solicitar retorno do banco/fornecedor",
+      "Validar substituição ou cancelamento do boleto",
+      "Atualizar o cliente com o prazo do retorno"] },
+];
+function checklistsDo(t) {
+  const alvo = ((t.servico || "") + " " + (t.assunto || "")).toLowerCase();
+  const c = CHECKLIST_STEPS.find(x => x.re.test(alvo));
+  if (!c) return "";
+  return `<details style="font-size:12px;margin-top:4px"><summary style="cursor:pointer" class="muted">✅ Checklist: ${esc(c.titulo)}</summary>` +
+    `<ol style="margin:6px 0 4px 18px;padding:0;max-width:520px;line-height:1.5">${c.passos.map(s => `<li>${esc(s)}</li>`).join("")}</ol></details>`;
+}
+
+async function carregarIndicadores() {
+  try {
+    const r = await fetch("/api/indicadores");
+    const j = await r.json();
+    if (j.erro) throw new Error(j.erro);
+    indicadores = j;
+    const set = (id, v) => { const el = $(id); if (el) el.textContent = v === undefined ? "" : `(${v})`; };
+    set("cSla1h", (j.sla || {}).exigidos);
+    set("cFornec", (j.fornecedor || {}).total);
+    set("cEncerrar", (j.retorno_encerrar || {}).total);
+    set("cImplant", (j.implantacao || {}).total);
+  } catch (e) {
+    indicadores = { erro: String(e.message || e) };
+  }
+  render();
+}
+
+function linhaIndicador(i, web, extra) {
+  const autor = i.por === "equipe" ? '<span class="pill green">equipe</span>'
+    : i.por === "cliente" ? '<span class="pill red" title="Última ação do cliente">cliente</span>'
+      : '<span class="muted">—</span>';
+  return `<tr>
+    <td><a href="${web}/Ticket/Edit/${i.id}" target="_blank" rel="noopener"><b>#${i.id}</b></a></td>
+    <td>${esc(i.cliente)}</td>
+    <td>${esc(i.servico || "")}</td>
+    <td>${esc(i.assunto)}</td>
+    <td>${esc(i.status)}</td>
+    <td>${autor}</td>
+    <td class="muted">${esc(i.ultima_acao || "")}</td>
+    <td><b>${i.horas != null ? esc(i.horas) + "h" : "—"}</b>${extra ? extra(i) : ""}</td>
+  </tr>`;
+}
+function tabelaIndicador(itens, extra, web) {
+  itens = itens || [];
+  if (!itens.length) return `<div class="empty">Nenhum item.</div>`;
+  return `<table><thead><tr><th>Ticket</th><th>Cliente</th><th>Serviço</th><th>Assunto</th><th>Situação</th><th>Última ação</th><th>Data</th><th>Idade</th></tr></thead><tbody>` +
+    itens.map(i => linhaIndicador(i, web, extra)).join("") + `</tbody></table>`;
+}
+
+function telaSla1h() {
+  const ind = indicadores || {};
+  const s = ind.sla || {};
+  const f = ind.fila || {};
+  const web = webBase();
+  let aviso = "";
+  if (f.reforco) {
+    aviso = `<div style="background:#ffdede;border:1px solid #ff8484;border-radius:8px;padding:10px 12px;margin-bottom:10px">🚨 <b>Fila do dia alta (${f.hoje} tickets, limite ${f.limite}).</b> Pedir reforço de atendimento — o playbook manda reforçar a equipe e voltar ao fluxo normal quando a fila cair para ${Math.max(8, Math.round(f.limite * 0.5))}.</div>`;
+  } else if (f.hoje) {
+    aviso = `<div style="background:#eaffea;border:1px solid #8fd68f;border-radius:8px;padding:8px 12px;margin-bottom:10px">🟢 Fila do dia (${f.hoje}): dentro do limite de ${f.limite}.</div>`;
+  }
+  const nota = `<p class="muted" style="margin:0 0 10px">Regra dos playbooks: responder em até <b>1 hora</b> após a última ação do cliente (ou em tickets <b>novos</b>). <b>${s.exigidos}</b> exigem resposta${f.reforco ? " e a fila do dia está alta" : ""}.</p>`;
+  return aviso + nota + tabelaIndicador(s.itens || [], i => (i.por === "cliente" || i.status === "Novo") ? ' <span class="pill red">aguarda resposta</span>' : "", web);
+}
+
+function telaFornecedor() {
+  const f = (indicadores || {}).fornecedor || {};
+  const web = webBase();
+  const chips = Object.entries(f.por_fornecedor || {})
+    .map(([k, v]) => `<span class="pill gray" title="Tickets aguardando este fornecedor">${esc(k)}: ${v}</span>`).join(" ");
+  const nota = `<p class="muted" style="margin:0 0 10px">Com justificativa <b>Retorno de Fornecedor</b> ou tags <code>fornecedor_*</code>, atualizar o cliente <b>diariamente</b> (casos C6/PJBank/Sicoob/Sicredi) mesmo sem retorno do fornecedor — não deixar o cliente esperando sem status (caso Perspicont/Rodolfo).</p>`;
+  return `<div style="margin-bottom:10px">${chips ? chips : '<span class="muted">Sem fornecedores em aberto.</span>'}</div>` + nota +
+    tabelaIndicador(f.itens || [], i => (i.dias != null ? ` <span class="pill amber">${esc(i.dias)}d sem retorno</span>` : ""), web);
+}
+
+function telaEncerrar() {
+  const e = (indicadores || {}).retorno_encerrar || {};
+  const web = webBase();
+  const perto = e.itens || [];
+  const prox = perto.filter(i => (i.restantes != null ? i.restantes : 99) <= 3).length;
+  let aviso = "";
+  if (prox) aviso = `<div style="background:#fff3cd;border:1px solid #f3d35a;border-radius:8px;padding:8px 12px;margin-bottom:10px">⚠️ ${prox} chegam ao prazo em até 3 dias — sem resposta do cliente, <b>resolver/arquivar no 5º dia</b> (auto-resolução).</div>`;
+  const nota = `<p class="muted" style="margin:0 0 10px">Justificativa <b>Retorno do Cliente - Encerramento</b>: o ticket é <b>resolvido automaticamente em 5 dias</b> se o cliente não responder. ${e.total || 0} em aberto${prox ? ` • ${prox} perto do prazo` : ""}.</p>`;
+  return aviso + nota + tabelaIndicador(perto,
+    i => ` <span class="pill ${(i.restantes != null && i.restantes <= 1) ? "red" : (i.restantes != null && i.restantes <= 3) ? "amber" : "green"}" title="Prazo de auto-resolução">${esc(i.prazo)}${i.restantes != null ? (i.restantes <= 0 ? " • vencido" : " • " + esc(i.restantes) + "d") : ""}</span>`,
+    web);
+}
+
+function telaImplantacao() {
+  const im = (indicadores || {}).implantacao || {};
+  const rec = (indicadores || {}).reclamacoes || {};
+  const web = webBase();
+  const recChips = Object.entries(rec.por_agente || {})
+    .map(([k, v]) => `<span class="pill red" title="Reclamações em aberto por atendente">${esc(nomeAgente(k))}: ${v}</span>`).join(" ");
+  let html = `<p class="muted" style="margin:0 0 10px">Tickets de implantação (tags ou lista local de ${esc((indicadores || {}).implantados_config || 0)} clientes). Dupla checagem: validar o cadastro com o CC implantador antes de liberar.${recChips ? " • Reclamações: " + recChips : ""}</p>`;
+  const itens = im.itens || [];
+  if (!itens.length) return html + `<div class="empty">Nenhum ticket de implantação em aberto.</div>`;
+  return html + tabelaIndicador(itens, () => "", web);
+}
+
+function avisoIndicadores() {
+  if (!indicadores || indicadores.erro) return "";
+  const s = indicadores.sla || {}, f = indicadores.fila || {};
+  const fc = (indicadores.fornecedor || {}).total || 0;
+  const en = (indicadores.retorno_encerrar || {}).total || 0;
+  const im = (indicadores.implantacao || {}).total || 0;
+  const chip = (aba, cor, txt) =>
+    `<a href="#${aba}" data-tab="${aba}" style="text-decoration:none;font-weight:600;color:${cor}">${txt}</a>`;
+  const chips = [];
+  if (s.exigidos) chips.push(chip("sla1h", "#a00", `⏰ SLA 1h: ${s.exigidos} aguardando`));
+  if (f.reforco) chips.push(chip("sla1h", "#a00", `🚨 Fila do dia: ${f.hoje} (>${f.limite})`));
+  if (fc) chips.push(chip("fornecedor", "#8a6d00", `🏦 Fornecedor: ${fc}`));
+  if (en) chips.push(chip("encerrar", "#8a6d00", `📬 Encerrar 5d: ${en}`));
+  if (im) chips.push(chip("implantacao", "#7c3aed", `🚀 Implantação: ${im}`));
+  if (!chips.length) return "";
+  return `<div style="background:#fff8e1;border:1px solid #ffe08a;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:13px">📋 ${chips.join(" • ")}</div>`;
+}
+
 function telaRanking() {
   if (!ranking || !ranking.itens || !ranking.itens.length) return `<div class="empty">Sem dados de ranking. Clique em Consultar (com um atendente específico em cache).</div>`;
   const toggle = `<label class="muted" style="font-size:12px;margin-left:10px"><input type="checkbox" id="chkRankDev" ${rankingDev ? "checked" : ""}> mostrar time de dev</label>`;
-  const linhas = ranking.itens.map(p => `<tr>
+  const linhas = ranking.itens.map(p => {
+    const fo = [];
+    if (p.fila_hoje) fo.push(`<span class="pill red" title="Tickets novos/atualizados pelo cliente hoje">Fila ${p.fila_hoje}</span>`);
+    if (p.antigos_7d) fo.push(`<span class="pill amber" title="Ativos parados há mais de 7 dias">Antigos ${p.antigos_7d}</span>`);
+    if (p.reclamacoes) fo.push(`<span class="pill red" title="Tickets com tag reclamacao_cliente">Recl. ${p.reclamacoes}</span>`);
+    if (p.implantacao) fo.push(`<span class="pill violet" title="Tickets de implantação em aberto">Impl. ${p.implantacao}</span>`);
+    if (p.fornecedor) fo.push(`<span class="pill gray" title="Aguardando retorno de fornecedor/banco">Fornec. ${p.fornecedor}</span>`);
+    return `<tr>
     <td>${esc(p.nome)}${p.papel === "dev" ? ' <span class="pill gray" title="Migrou para o time de desenvolvimento">dev</span>' : ""}${p.email === agenteSel ? ' <span class="pill blue">atual</span>' : ""}</td>
     <td style="text-align:right"><b>${p.ativos}</b></td>
     <td style="text-align:right">${p.criticos ? `<span class="pill red">${p.criticos}</span>` : "0"}</td>
@@ -1066,11 +1260,13 @@ function telaRanking() {
     <td style="text-align:right">${p.reabertos ? `<span class="pill amber">${p.reabertos}</span>` : "0"}</td>
     <td>${barraPct(p.csat_pct)} <span class="muted">(${p.sat}👍 / ${p.insat}👎)</span></td>
     <td style="text-align:right">${p.nps != null ? p.nps : '<span class="muted">—</span>'}</td>
-  </tr>`).join("");
-  return `<p class="muted" style="margin:0 0 10px;font-size:13px">Comparativo por atendente — usa os caches salvos por atendente. "tempo médio parado" = horas desde a última ação do ticket ativo atual (quanto menor, melhor). FCR e CSAT são dos tickets resolvidos/satisfação no período. Por padrão só mostra o time de suporte (Jefferson + Lucas)${toggle}.</p>
-  <table>
-    <thead><tr><th>Atendente</th><th style="text-align:right">Ativos</th><th style="text-align:right">Críticos</th><th style="text-align:right">Tempo médio parado</th><th style="text-align:right">Resolvidos (90d)</th><th>FCR (1º contato)</th><th style="text-align:right">Reabertos</th><th>CSAT</th><th style="text-align:right">NPS</th></tr></thead>
-    <tbody>${linhas}</tbody></table>`;
+    <td style="max-width:210px">${fo.join(" ") || '<span class="muted">—</span>'}</td>
+  </tr>`;
+  }).join("");
+  return `<p class="muted" style="margin:0 0 10px;font-size:13px">Comparativo por atendente — usa os caches salvos por atendente. "tempo médio parado" = horas desde a última ação do ticket ativo atual (quanto menor, melhor). FCR e CSAT são dos tickets resolvidos/satisfação no período. Por padrão só mostra o time de suporte (Jefferson + Lucas). Coluna "Foco" = fila do dia, ativos parados &gt;7d, reclamações, implantação e retornos de fornecedor em aberto${toggle}.</p>
+  <div style="overflow-x:auto"><table>
+    <thead><tr><th>Atendente</th><th style="text-align:right">Ativos</th><th style="text-align:right">Críticos</th><th style="text-align:right">Tempo médio parado</th><th style="text-align:right">Resolvidos (90d)</th><th>FCR (1º contato)</th><th style="text-align:right">Reabertos</th><th>CSAT</th><th style="text-align:right">NPS</th><th>Foco</th></tr></thead>
+    <tbody>${linhas}</tbody></table></div>`;
 }
 
 async function carregarPlantao() {
@@ -1327,6 +1523,16 @@ $("selServico").addEventListener("change", (e) => {
 });
 
 $("painel").addEventListener("click", async (e) => {
+  const nav = e.target.closest && e.target.closest("a[data-tab]");
+  if (nav) {
+    e.preventDefault();
+    const alvo = nav.dataset.tab;
+    document.querySelectorAll(".tab").forEach(x => x.classList.toggle("active", x.dataset.tab === alvo));
+    aba = alvo;
+    history.replaceState(null, "", "#" + alvo);
+    render();
+    return;
+  }
   const thOrd = e.target.closest && e.target.closest("th.ord");
   if (thOrd) {
     const campo = thOrd.dataset.campo;
@@ -1422,6 +1628,7 @@ if (abaHash && document.querySelector('.tab[data-tab="' + abaHash + '"]')) {
 (async () => {
   await carregarAgentes();
   await carregarCache();
+  carregarIndicadores();
 })();
 
 </script>
