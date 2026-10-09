@@ -98,6 +98,7 @@
     <button class="tab" data-tab="acoes">Ações sugeridas</button>
     <button class="tab" data-tab="duvidas">Dúvidas / Histórico</button>
     <button class="tab" data-tab="horarios">Horários</button>
+    <button class="tab" data-tab="macros">Macros <span class="cnt" id="cMacro"></span></button>
     <button class="tab" data-tab="ranking">Equipe / Ranking</button>
     <button class="tab" data-tab="ok">OK <span class="cnt" id="cOk"></span></button>
   </div>
@@ -134,6 +135,13 @@ let servicos = null;
 let solucoes = {};
 let parecidos = {};
 let mapaHor = null;
+let macros = null;
+let macroValid = {};
+let macroBusca = null;
+let macroBuscaQ = "";
+let macroJobTimer = null;
+let rankingDev = false;
+let plantaoOrdemPadrao = [];
 let servicoSel = localStorage.getItem("servicoSel") || "";
 
 function servicoRaiz(x) {
@@ -176,8 +184,9 @@ async function carregarAgentes() {
     const j = await r.json();
     agentes = j.agentes || [];
     agenteNomePadrao = j.agente_nome || agenteNomePadrao;
+    plantaoOrdemPadrao = j.plantao_ordem || [];
     const sel = $("selAgente");
-    const opts = agentes.map(a => `<option value="${esc(a.email)}">${esc(a.nome)}</option>`).join("");
+    const opts = agentes.map(a => `<option value="${esc(a.email)}">${esc(a.nome)}${a.papel === "dev" ? " (dev)" : ""}</option>`).join("");
     sel.innerHTML = `<option value="*">Todos os atendentes</option>` + opts;
     const valido = agenteSel === "*" || agentes.some(a => a.email === agenteSel);
     if (!valido) agenteSel = j.default || (agentes[0] && agentes[0].email) || "*";
@@ -499,6 +508,15 @@ function render() {
     $("painel").innerHTML = telaHorarios();
     return;
   }
+  if (aba === "macros") {
+    if (!macros) {
+      $("painel").innerHTML = `<div class="empty">Carregando catálogo de macros…</div>`;
+      carregarMacros();
+      return;
+    }
+    $("painel").innerHTML = telaMacros();
+    return;
+  }
   if (aba === "mesclas") {
     const k = mergeEscopo + "|" + agenteSel;
     if (!mergeDados || mergeKey !== k) {
@@ -778,7 +796,7 @@ async function buscarPesquisaPeriodo() {
 
 async function carregarRanking() {
   try {
-    const r = await fetch("/api/ranking");
+    const r = await fetch("/api/ranking" + (rankingDev ? "?dev=1" : ""));
     ranking = await r.json();
     if (ranking.erro) { banner(ranking.erro, "err"); ranking = null; return; }
   } catch (e) {
@@ -826,6 +844,209 @@ function telaHorarios() {
   <p class="muted" style="margin-top:10px;font-size:12px">Leitura: olhe a coluna "Todas" para saber as horas de maior volume (onde reforçar a escala) e as linhas para os dias que mais trazem abertura de tickets.</p>`;
 }
 
+async function carregarMacros() {
+  try {
+    const r = await fetch("/api/macros");
+    const j = await r.json();
+    if (j.erro) throw new Error(j.erro);
+    macros = j;
+    atualizarContadorMacro();
+  } catch (e) {
+    banner("Falha ao carregar macros: " + e, "err");
+    macros = null;
+  }
+  render();
+}
+
+function atualizarContadorMacro() {
+  if (!macros || !$("cMacro")) return;
+  const cat = macros.catalogo || [];
+  const com = cat.filter(c => c.ocorrencias > 0).length;
+  $("cMacro").textContent = `(${com}/${cat.length})`;
+}
+
+function macroJobBox() {
+  const job = (macros && macros.job) || {};
+  if (job.ativo) {
+    if (!macroJobTimer) macroJobTimer = setInterval(carregarStatusMacro, 3000);
+    return `<div style="background:#eef6ff;border:1px solid #b9d8ff;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:13px">⏳ Indexando ações: <b>${job.processados || 0}/${job.total || 0}</b> • ${job.erros || 0} erro(s)${job.atual ? ` • ticket <b>#${job.atual}</b>` : ""} <span class="muted">(limite da API: 10 req/min — pode levar horas)</span></div>`;
+  }
+  if (job.terminado_em) {
+    return `<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:13px">✅ Indexação concluída: ${job.processados || 0} ticket(s) com ações novas (${job.erros || 0} erro(s)).</div>`;
+  }
+  if (job.erro) return `<div style="color:#a00;margin-bottom:10px">Erro na indexação: ${esc(job.erro)}</div>`;
+  return "";
+}
+
+function renderValidacaoMacro() {
+  const web = webBase();
+  const ids = Object.keys(macroValid);
+  if (!ids.length) return "";
+  return ids.map(tid => {
+    const v = macroValid[tid];
+    if (v.carregando) return `<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px" class="muted">Buscando ações do #${esc(tid)}…</div>`;
+    if (v.erro) return `<div style="background:#fee;border:1px solid #f88;border-radius:10px;padding:14px;margin-bottom:12px;color:#991b1b">Erro ao validar #${esc(tid)}: ${esc(v.erro)}</div>`;
+    const en = v.encontradas || [], na = v.nao_encontradas || [];
+    const linhas = en.map(m => {
+      const occ = (m.ocorrencias || []).map(o => `<li><b>${esc((o.data || "").slice(0, 16).replace("T", " "))}</b> — ${esc(o.autor)}${o.interna ? " <span class=\"pill gray\">nota interna</span>" : " <span class=\"pill green\">público</span>"}<div class="muted" style="font-size:12px;margin-top:2px">${esc(o.trecho)}</div></li>`).join("");
+      const comp = v.indice && v.indice[m.id];
+      return `<details open style="margin:6px 0"><summary>✅ <b>${esc(m.nome)}</b> <span class="pill green">${m.quantos}x neste ticket</span>${comp && comp.tickets ? ` <span class="pill gray" title="Comparação com o resto do índice local">também em ${comp.tickets} ticket(s) do índice</span>` : ""}</summary><ul style="margin:5px 0 0 18px;padding:0;font-size:13px">${occ}</ul></details>`;
+    }).join("");
+    return `<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px">
+      <div style="font-weight:600;margin-bottom:4px"><a href="${web}/Ticket/Edit/${esc(tid)}" target="_blank" rel="noopener">#${esc(tid)}</a> — ${esc(v.cliente || "")} ${v.assunto ? `<span class="muted" style="font-weight:400">${esc(v.assunto)}</span>` : ""}
+        <span class="pill gray" title="De onde vieram as ações analisadas">fonte: ${esc(v.fonte || "")}</span>
+        <span class="muted" style="font-weight:400;font-size:12px">${v.acoes} ação(ões) analisadas</span></div>
+      ${en.length ? linhas : `<div class="muted">Nenhuma macro do catálogo apareceu nas ações deste ticket.</div>`}
+      <div class="muted" style="font-size:12px;margin-top:8px"><b>Não encontradas:</b> ${na.length ? esc(na.join(", ")) : "—"} — se a macro foi editada antes de disparar, busque um trecho do texto no campo acima.</div>
+    </div>`;
+  }).join("");
+}
+
+function renderBuscaMacro() {
+  if (!macroBusca) return "";
+  if (macroBusca.carregando) return `<div class="muted" style="padding:6px 0">Buscando no índice…</div>`;
+  if (macroBusca.erro) return `<div style="color:#a00;padding:6px 0">${esc(macroBusca.erro)}</div>`;
+  const itens = macroBusca.itens || [];
+  if (!itens.length) return `<div class="empty">Nada encontrado para "${esc(macroBusca.consulta || "")}" no índice de ${macroBusca.tickets_indice || 0} ticket(s).</div>`;
+  const web = webBase();
+  const linhas = itens.map(i => `<tr>
+    <td style="white-space:nowrap"><a href="${web}/Ticket/Edit/${i.ticket}" target="_blank" rel="noopener"><b>#${i.ticket}</b></a></td>
+    <td class="muted">${esc(i.cliente)}</td>
+    <td class="muted">${esc(i.assunto)}</td>
+    <td class="muted" style="white-space:nowrap">${esc((i.data || "").slice(0, 16).replace("T", " "))}</td>
+    <td>${esc(i.autor)}${i.interna ? ' <span class="pill gray">nota interna</span>' : ""}</td>
+    <td style="font-size:12.5px">${esc(i.trecho)}</td>
+  </tr>`).join("");
+  return `<div style="margin-bottom:14px"><div class="muted" style="font-size:12px;margin-bottom:6px">${macroBusca.total} ocorrência(s) em ${macroBusca.tickets_indice} ticket(s) do índice — termos: ${(macroBusca.termos || []).map(esc).join(", ")}</div>
+    <table><thead><tr><th>Ticket</th><th>Cliente</th><th>Assunto</th><th>Data</th><th>Autor</th><th>Trecho encontrado</th></tr></thead><tbody>${linhas}</tbody></table></div>`;
+}
+
+function telaMacros() {
+  const m = macros || {};
+  const idx = m.indice || {};
+  const btn = "padding:7px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;cursor:pointer;background:#fff";
+  const inp = "padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px";
+  let html = `<div style="background:#fff8e1;border:1px solid #ffe08a;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;line-height:1.65">
+    <b>Como funciona</b> — a API pública do Movidesk <b>não expõe as macros</b> e as ações não trazem o campo "macro": quando o atendente dispara uma macro, o <b>texto</b> dela entra na descrição da ação. A validação aqui é por <b>casamento de texto</b> (o índice combina as ações dos tickets do cache + as buscadas ao vivo + a varredura do histórico).
+    <br>Índice: <b>${idx.tickets_com_acoes || 0}</b> ticket(s) com ações • <b>${idx.acoes || 0}</b> ação(ões). Quanto mais a você indexar, mais forte a comparação "com os outros tickets".
+  </div>`;
+  html += macroJobBox();
+  html += `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+    <input id="macroTicket" placeholder="Nº do ticket (ex.: 33124)" style="${inp};width:180px">
+    <button id="btnMacroValidar" style="${btn};background:var(--blue);color:#fff">Validar macros no ticket</button>
+    <span class="muted" style="font-size:12px">busca as ações ao vivo (1 req)</span>
+    <span style="width:12px"></span>
+    <input id="macroQ" value="${esc(macroBuscaQ)}" placeholder="Buscar trecho nas ações de todos os tickets indexados…" style="${inp};min-width:320px">
+    <button id="btnMacroBuscar" style="${btn}">Buscar no índice</button>
+    <button id="btnMacroIndexar" style="${btn}" ${m.job && m.job.ativo ? "disabled" : ""}>${m.job && m.job.ativo ? "Indexando…" : "Indexar ações do histórico"}</button>
+    ${m.job && m.job.ativo ? `<button id="btnMacroParar" style="${btn}">Parar</button>` : ""}
+  </div>`;
+  html += renderValidacaoMacro();
+  html += renderBuscaMacro();
+
+  const cat = m.catalogo || [];
+  const web = webBase();
+  const linhas = cat.map(c => `<tr>
+    <td><b>${esc(c.nome)}</b><br><small class="muted">${esc(c.fonte)}</small></td>
+    <td class="muted" style="font-size:12px">${(c.assinaturas || []).map(esc).join("<br>")}</td>
+    <td style="text-align:right"><b>${c.ocorrencias || 0}</b>${(c.tickets || []).length ? `<br><small class="muted">${c.tickets.slice(0, 6).map(t => `<a href="${web}/Ticket/Edit/${t}" target="_blank" rel="noopener">#${t}</a>`).join(", ")}${c.ocorrencias > 6 ? "…" : ""}</small>` : ""}</td>
+    <td class="muted" style="white-space:nowrap">${esc(c.ultima || "—")}</td>
+    <td><button class="btnMacroBuscarMac" data-q="${esc((c.assinaturas || [""])[0])}" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;background:#fff">Buscar no índice</button></td>
+  </tr>`).join("");
+  html += `<h3 style="font-size:14px;margin:18px 0 6px">Catálogo de macros <span class="muted" style="font-weight:400">(${cat.length} — semeado pelos playbooks; pode-se buscar qualquer outro trecho livremente)</span></h3>`;
+  html += `<table><thead><tr><th>Macro</th><th>Trecho procurado nas ações</th><th style="text-align:right">Tickets no índice</th><th>Última</th><th></th></tr></thead><tbody>${linhas}</tbody></table>`;
+  html += `<p class="muted" style="margin-top:10px;font-size:12px">⚠️ Detecção por texto: se o atendente editar bastante a macro antes de enviar, o trecho pode não bater — nesse caso busque uma frase que sobreviva à edição. O nº de "tickets no índice" é a comparação com os outros atendimentos.</p>`;
+  return html;
+}
+
+async function carregarStatusMacro() {
+  try {
+    const r = await fetch("/api/macros/status");
+    const j = await r.json();
+    if (macros) {
+      macros.job = j.job;
+      macros.indice = Object.assign({}, macros.indice, {
+        tickets_com_acoes: j.tickets_indexados,
+        salvo_em: j.salvo_em,
+      });
+      macros.restantes = j.restantes;
+    }
+    if (j.job && !j.job.ativo) {
+      if (macroJobTimer) { clearInterval(macroJobTimer); macroJobTimer = null; }
+      const r2 = await fetch("/api/macros");
+      const j2 = await r2.json();
+      if (!j2.erro) { macros = j2; atualizarContadorMacro(); }
+    }
+    if (aba === "macros") render();
+  } catch (e) { /* silencioso */ }
+}
+
+async function validarMacro(id) {
+  id = String(id || "").trim();
+  if (!/^\d+$/.test(id)) { banner("Informe o número do ticket (só dígitos).", "err"); return; }
+  banner("");
+  macroValid[id] = { carregando: true };
+  render();
+  try {
+    const r = await fetch("/api/macros/validar?id=" + encodeURIComponent(id));
+    const j = await r.json();
+    if (j.erro) throw new Error(j.erro);
+    macroValid[id] = j;
+    const r2 = await fetch("/api/macros");
+    const j2 = await r2.json();
+    if (!j2.erro) { macros = j2; atualizarContadorMacro(); }
+  } catch (e) {
+    macroValid[id] = { erro: String(e.message || e) };
+  }
+  render();
+}
+
+async function buscarMacro(q) {
+  q = String(q || "").trim();
+  macroBuscaQ = q;
+  if (!q) { banner("Digite um trecho para buscar.", "err"); return; }
+  banner("");
+  macroBusca = { carregando: true };
+  render();
+  try {
+    const r = await fetch("/api/macros/buscar?q=" + encodeURIComponent(q));
+    const j = await r.json();
+    if (j.erro) throw new Error(j.erro);
+    macroBusca = j;
+  } catch (e) {
+    macroBusca = { erro: String(e.message || e) };
+  }
+  render();
+}
+
+async function indexarAcoesMacro() {
+  try {
+    const r = await fetch("/api/macros/indexar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    });
+    const j = await r.json();
+    if (j.erro) throw new Error(j.erro);
+    if (macros) macros.job = Object.assign({ ativo: true, processados: 0, erros: 0 }, j.job || {});
+    if (!macroJobTimer) macroJobTimer = setInterval(carregarStatusMacro, 3000);
+  } catch (e) {
+    banner("Erro ao iniciar indexação: " + e.message, "err");
+  }
+  render();
+}
+
+async function pararIndexacaoMacro() {
+  try {
+    await fetch("/api/macros/indexar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ parar: true }),
+    });
+  } catch (e) { /* silencioso */ }
+  await carregarStatusMacro();
+}
+
 function barraPct(pct) {
   if (pct == null) return `<span class="muted">—</span>`;
   const cor = pct >= 80 ? "#15803d" : pct >= 60 ? "#b45309" : "#b91c1c";
@@ -834,8 +1055,9 @@ function barraPct(pct) {
 
 function telaRanking() {
   if (!ranking || !ranking.itens || !ranking.itens.length) return `<div class="empty">Sem dados de ranking. Clique em Consultar (com um atendente específico em cache).</div>`;
+  const toggle = `<label class="muted" style="font-size:12px;margin-left:10px"><input type="checkbox" id="chkRankDev" ${rankingDev ? "checked" : ""}> mostrar time de dev</label>`;
   const linhas = ranking.itens.map(p => `<tr>
-    <td>${esc(p.nome)}${p.email === agenteSel ? ' <span class="pill blue">atual</span>' : ""}</td>
+    <td>${esc(p.nome)}${p.papel === "dev" ? ' <span class="pill gray" title="Migrou para o time de desenvolvimento">dev</span>' : ""}${p.email === agenteSel ? ' <span class="pill blue">atual</span>' : ""}</td>
     <td style="text-align:right"><b>${p.ativos}</b></td>
     <td style="text-align:right">${p.criticos ? `<span class="pill red">${p.criticos}</span>` : "0"}</td>
     <td style="text-align:right">${p.tempo_medio_parado != null ? esc(p.tempo_medio_parado) + "h" : '<span class="muted">—</span>'}</td>
@@ -845,7 +1067,7 @@ function telaRanking() {
     <td>${barraPct(p.csat_pct)} <span class="muted">(${p.sat}👍 / ${p.insat}👎)</span></td>
     <td style="text-align:right">${p.nps != null ? p.nps : '<span class="muted">—</span>'}</td>
   </tr>`).join("");
-  return `<p class="muted" style="margin:0 0 10px;font-size:13px">Comparativo por atendente — usa os caches salvos por atendente. "tempo médio parado" = horas desde a última ação do ticket ativo atual (quanto menor, melhor). FCR e CSAT são dos tickets resolvidos/satisfação no período.</p>
+  return `<p class="muted" style="margin:0 0 10px;font-size:13px">Comparativo por atendente — usa os caches salvos por atendente. "tempo médio parado" = horas desde a última ação do ticket ativo atual (quanto menor, melhor). FCR e CSAT são dos tickets resolvidos/satisfação no período. Por padrão só mostra o time de suporte (Jefferson + Lucas)${toggle}.</p>
   <table>
     <thead><tr><th>Atendente</th><th style="text-align:right">Ativos</th><th style="text-align:right">Críticos</th><th style="text-align:right">Tempo médio parado</th><th style="text-align:right">Resolvidos (90d)</th><th>FCR (1º contato)</th><th style="text-align:right">Reabertos</th><th>CSAT</th><th style="text-align:right">NPS</th></tr></thead>
     <tbody>${linhas}</tbody></table>`;
@@ -903,7 +1125,8 @@ function telaPlantao() {
         <option value="1">1 pessoa por dia</option>
         <option value="2">Dias alternados (dia sim / dia não)</option>
       </select>
-      <input id="plantaoOrdem" placeholder="emails na ordem, separados por vírgula" value="${esc(agentes.map(a => a.email).join(', '))}" style="${inp};width:min(460px,90%)">
+      <input id="plantaoOrdem" placeholder="emails na ordem, separados por vírgula" value="${esc((plantaoOrdemPadrao.length ? plantaoOrdemPadrao : agentes.map(a => a.email)).join(', '))}" style="${inp};width:min(460px,90%)">
+      <span class="muted" style="font-size:12px">ordem padrão: Lucas → Jefferson (rodízio do suporte)</span>
       <button id="btnGerarPlantao" style="${btn}">Gerar (60 dias)</button>
     </div>
   </div>`;
@@ -1132,6 +1355,12 @@ $("painel").addEventListener("click", async (e) => {
   if (e.target.id === "btnHistCompleto") { await indexarHistorico(); return; }
   if (e.target.id === "btnHistTudo") { await indexarHistorico("2021-05-01", new Date().toISOString().slice(0, 10)); return; }
   if (e.target.id === "btnPesquisaPeriodo") { await buscarPesquisaPeriodo(); return; }
+  if (e.target.id === "btnMacroValidar") { await validarMacro((($("macroTicket") || {}).value || "")); return; }
+  if (e.target.id === "btnMacroBuscar") { await buscarMacro((($("macroQ") || {}).value || "")); return; }
+  const btnMQ = e.target.closest && e.target.closest(".btnMacroBuscarMac");
+  if (btnMQ) { await buscarMacro(btnMQ.dataset.q); return; }
+  if (e.target.id === "btnMacroIndexar") { await indexarAcoesMacro(); return; }
+  if (e.target.id === "btnMacroParar") { await pararIndexacaoMacro(); return; }
   if (e.target.id === "btnSalvarPlantao") {
     const ta = $("plantaoEscala");
     await salvarPlantao(textoParaEscala(ta ? ta.value : ""), ($("plantaoNota") || {}).value || "");
@@ -1164,10 +1393,17 @@ $("painel").addEventListener("click", async (e) => {
 
 $("painel").addEventListener("keydown", (e) => {
   if (e.target.id === "buscaHist" && e.key === "Enter") { e.preventDefault(); buscarHist(); }
+  if (e.target.id === "macroTicket" && e.key === "Enter") { e.preventDefault(); validarMacro(e.target.value); }
+  if (e.target.id === "macroQ" && e.key === "Enter") { e.preventDefault(); buscarMacro(e.target.value); }
 });
 
 $("painel").addEventListener("change", (e) => {
   if (e.target.id === "chkMesclaConcluidas") { mergeMostrarConcluidas = e.target.checked; render(); }
+  if (e.target.id === "chkRankDev") {
+    rankingDev = e.target.checked;
+    ranking = null;
+    render();
+  }
 });
 
 document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
