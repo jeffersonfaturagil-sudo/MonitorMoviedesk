@@ -339,7 +339,7 @@ async function verParecidos(id, modo) {
   parecidos[id] = { carregando: true, modo: modo };
   render();
   try {
-    const r = await fetch(`/api/parecidos?id=${encodeURIComponent(id)}&modo=${encodeURIComponent(modo)}`);
+    const r = await fetch(`/api/parecidos?id=${encodeURIComponent(id)}&modo=${encodeURIComponent(modo)}&agente=${encodeURIComponent(agenteSel)}`);
     const j = await r.json();
     if (j.erro) throw new Error(j.erro);
     parecidos[id] = j;
@@ -722,7 +722,7 @@ async function buscarHist() {
   if (!histQuery) { histMsg = "Digite algo para buscar."; render(); return; }
   histMsg = "Buscando…"; render();
   try {
-    const r = await fetch("/api/historico?q=" + encodeURIComponent(histQuery));
+    const r = await fetch("/api/historico?q=" + encodeURIComponent(histQuery) + "&agente=" + encodeURIComponent(agenteSel));
     const j = await r.json();
     if (j.erro) throw new Error(j.erro);
     histItens = j.itens || [];
