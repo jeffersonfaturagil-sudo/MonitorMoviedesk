@@ -154,6 +154,8 @@ let procQ = "";
 let procTime = "";
 let procTag = "";
 let procErro = "";
+let procTermos = [];
+let procTimer = null;
 let servicoSel = localStorage.getItem("servicoSel") || "";
 
 function servicoRaiz(x) {
@@ -1215,6 +1217,7 @@ async function buscarProcessos() {
     if (j.erro) throw new Error(j.erro);
     procDados = j.processos || [];
     procTags = j.tags || [];
+    procTermos = j.termos || [];
   } catch (e) {
     procDados = [];
     procErro = String(e.message || e);
@@ -1226,8 +1229,14 @@ function renderizarProcessos() {
   const alvo = $("procResult");
   if (!alvo) return;
   if (procErro) { alvo.innerHTML = `<div class="empty">Falha ao carregar processos: ${esc(procErro)}</div>`; return; }
-  if (!procDados.length) { alvo.innerHTML = `<div class="empty">Nenhum processo encontrado${procQ ? " para \"" + esc(procQ) + "\"" : ""}. Tente outros termos ou limpe os filtros.</div>`; return; }
-  alvo.innerHTML = procDados.map(doc => {
+  const termosTxt = procQ && procTermos.length
+    ? `<div class="muted" style="font-size:12px;margin-bottom:8px">Termos usados: <b>${procTermos.map(esc).join(", ")}</b> — palavras como "com/de/para" são ignoradas.</div>` : "";
+  if (!procDados.length) {
+    alvo.innerHTML = `<div class="empty">Nenhum processo com "${esc(procQ)}".</div>
+      <p class="muted" style="font-size:13px">Dica: use poucas palavras e sem conector ("nota fiscal erro", "boleto", "nfse", "faturamento"), ou limpe os filtros.</p>`;
+    return;
+  }
+  alvo.innerHTML = termosTxt + procDados.map(doc => {
     const times = doc.times.map(t => `<span class="pill blue" title="Time">${nomeTime(t)}</span>`).join(" ");
     const tags = doc.tags.map(t => `<span class="pill gray">${esc(t)}</span>`).join(" ");
     const secoes = doc.secoes.map((s, i) => `
@@ -1716,6 +1725,12 @@ $("painel").addEventListener("keydown", (e) => {
   if (e.target.id === "macroTicket" && e.key === "Enter") { e.preventDefault(); validarMacro(e.target.value); }
   if (e.target.id === "macroQ" && e.key === "Enter") { e.preventDefault(); buscarMacro(e.target.value); }
   if (e.target.id === "procQ" && e.key === "Enter") { e.preventDefault(); buscarProcessos(); }
+});
+
+$("painel").addEventListener("input", (e) => {
+  if (e.target.id !== "procQ") return;
+  clearTimeout(procTimer);
+  procTimer = setTimeout(buscarProcessos, 350);
 });
 
 $("painel").addEventListener("change", (e) => {
