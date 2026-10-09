@@ -675,11 +675,42 @@ def _tokens(text: str) -> list[str]:
     return [w for w in raw if len(w) >= 3 and w not in STOPWORDS]
 
 
+def definir_agente(email: str = ""):
+    """Define o atendente ativo (perfil) para as buscas de historico/parecidos."""
+    _AGENTE.set((email or AGENT_EMAIL).lower())
+
+
+def _agente_escopo():
+    """Retorna (email, nome_normalizado) do atendente selecionado, ou (None, None)
+    quando "Todos os atendentes" (fila `*`/vazia). Usado para limitar buscas ao perfil."""
+    ag = agente_atual().lower()
+    if not ag or ag == "*":
+        return None, None
+    nome = None
+    for a in load_cache_raw().get("agentes") or []:
+        if isinstance(a, dict) and (a.get("email") or "").lower() == ag:
+            nome = _norm(a.get("nome") or a.get("businessName") or "")
+            break
+    return ag, nome
+
+
+def _pertence_agente(t: dict, ag: str, anome: str) -> bool:
+    ow = t.get("owner") or {}
+    if (ow.get("email") or "").lower() == ag:
+        return True
+    if anome and _norm(ow.get("businessName") or ow.get("nome") or "") == anome:
+        return True
+    return False
+
+
 def _historico_entries() -> list[dict]:
+    ag, anome = _agente_escopo()
     raw = load_cache_raw()
     entries: dict[int, dict] = {}
+    def ok(t: dict) -> bool:
+        return bool(t.get("id")) and (not ag or _pertence_agente(t, ag, anome))
     for t in raw.get("historico") or []:
-        if isinstance(t, dict) and t.get("id"):
+        if ok(t):
             entries[t["id"]] = t
     por_agente = raw.get("por_agente")
     if isinstance(por_agente, dict):
@@ -687,7 +718,7 @@ def _historico_entries() -> list[dict]:
             if not isinstance(bucket, dict):
                 continue
             for t in bucket.get("resolvidos") or []:
-                if isinstance(t, dict) and t.get("id"):
+                if ok(t):
                     entries.setdefault(t["id"], t)
     return list(entries.values())
 
