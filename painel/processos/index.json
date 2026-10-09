@@ -1,0 +1,67 @@
+{
+  "playbook-suporte.txt": {
+    "titulo": "Playbook de Suporte",
+    "times": ["suporte"],
+    "tags": ["Suporte", "Boleto", "NFS-e", "E-mail", "API", "Onboarding"]
+  },
+  "playbook-implantacao.txt": {
+    "titulo": "Playbook de Implantação",
+    "times": ["implantacao", "suporte"],
+    "tags": ["Implantação", "Onboarding", "Treinamento"]
+  },
+  "playbook-cs-helpdesk.txt": {
+    "titulo": "Playbook CS e HelpDesk",
+    "times": ["suporte", "coordenacao"],
+    "tags": ["Comunicação", "Retorno", "Prazo"]
+  },
+  "playbook-movidesk.txt": {
+    "titulo": "Playbook Helpdesk (Movidesk)",
+    "times": ["suporte", "dev"],
+    "tags": ["Movidesk", "Ferramenta", "Tickets"]
+  },
+  "roteiro-onboarding.txt": {
+    "titulo": "Roteiro de Onboarding (time)",
+    "times": ["suporte"],
+    "tags": ["Onboarding", "Rotina"]
+  },
+  "kpi-suporte.txt": {
+    "titulo": "KPI de Suporte",
+    "times": ["coordenacao"],
+    "tags": ["KPI", "FCR", "Métricas"]
+  },
+  "fluxo-erro-faturamento.txt": {
+    "titulo": "Fluxo: Erro de Faturamento",
+    "times": ["suporte", "dev"],
+    "tags": ["Faturamento", "Erro", "Automações"]
+  },
+  "guia-videochamada-implantacao.txt": {
+    "titulo": "Guia de Videochamada de Implantação",
+    "times": ["implantacao"],
+    "tags": ["Implantação", "Treinamento", "Videochamada"]
+  },
+  "ajustes-fluxo-implantacao-suporte.txt": {
+    "titulo": "Ajustes: fluxo de implantação e suporte",
+    "times": ["suporte", "implantacao"],
+    "tags": ["Implantação", "Suporte", "Agendamento"]
+  },
+  "jornada-cliente-contador.txt": {
+    "titulo": "Jornada do Cliente Contador",
+    "times": ["coordenacao", "implantacao"],
+    "tags": ["Jornada", "Contador", "Retenção"]
+  },
+  "suporte-embradev.txt": {
+    "titulo": "Suporte Embradev",
+    "times": ["suporte"],
+    "tags": ["Embradev", "Suporte"]
+  },
+  "suporte-fornecedores-embradev.txt": {
+    "titulo": "Suporte Fornecedores Embradev",
+    "times": ["suporte"],
+    "tags": ["Embradev", "Fornecedores"]
+  },
+  "ocorrencia-nfse-emails.txt": {
+    "titulo": "Ocorrência: envio de e-mails de NFS-e",
+    "times": ["suporte"],
+    "tags": ["NFS-e", "E-mail", "Ocorrência"]
+  }
+}
