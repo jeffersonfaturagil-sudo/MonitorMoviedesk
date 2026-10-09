@@ -1,0 +1,996 @@
+Playbook de Suporte
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ORIENTAÇÕES IMPORTANTES
+
+Em caso de dúvida:
+1º Pesquisar no playbook e na base de conhecimento
+2º Pesquise tickets com assunto semelhante
+3º Solicite ajuda aos colegas de suporte / implantação - Obs: O canal de voz deve ser utilizado para troca de experiências
+4º Solicite ajuda de um analista - Obs: Para solicitar ajuda de um analista, tenha evidências em mãos, traga o máximo de informações possíveis (prints, questionamentos e apontamentos)
+
+Principais prioridades de atendimento (URGENTES):;
+Boleto/Cobrança
+Nota Fiscal
+E-mail
+Obs: O cliente precisa receber o pagamento pelo serviço, sem obstruções para o fluxo de caixa da empresa
+
+Sugestão para estrutura de resposta por e-mail:
+Seja objetivo
+Numere e ordene ações que o cliente deve realizar
+Evite repetições em palavras (redundância)
+Revise o texto antes de enviar
+
+DUPLA CHECAGEM:
+
+Ao atender um cliente, verifique se o mesmo encontra-se em implantação
+Em caso positivo, comunicar (colocar em cópia) o implantador responsável
+Ocorre que o cliente pode enviar arquivos para configuração de NFS-e, por exemplo, ou dados bancários, que são essenciais para o implantador configurar
+O intuito é não ficar com o ticket aguardando (solto) o atendimento
+
+# HELP DESK
+
+
+https://atendimento.faturagil.com.br/
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------c-------------------------------------------------------------------
+# BASE DE CONHECIMENTO
+
+https://atendimento.faturagil.com.br/kb/article/199704/ola-que-bom-te-ver-por-aqui
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# PASTAS NO DRIVE
+
+Pasta do Suporte: Suporte Embradev FaturÁgil
+Pasta dos Clientes: Clientes implantação / treinamento
+Pasta de manuais: Manuais
+Pasta de NFS-e Tecnospeed: NFS-e - nota fiscal de serviço eletrônica - Tecnospeed
+Pasta da PJBank: PJBank - Boleto, Cartão e Conta Digital
+Pasta Lista de Ramais 
+
+
+Atalho: Playbook de Implantação - FaturÁgil
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+ROTINA DO SUPORTE:
+
+1 - Verificar tickets Novos e respondidos pelo cliente - Fazer a recepção (Dica: Utilizar o filtro: Tickets Atualizados pelo CLIENTE)
+OBS: Tickets de onboarding que o cliente responder: Fazer a recepção e encaminhar para o Implantador responsável.
+Ocorre muitas vezes de o implantador estar em reunião e demorar para responder. Desta maneira o cliente recebe um feedback de que o que ele enviou foi recebido e será repassado, damos atenção ao caso dele.
+
+2 - Preparar informações para a Daily
+
+3 - Situações novas de atendimento que não estiverem presentes no playbook devem ser atualizadas no material para orientação do time
+
+4 - Apresentar na daily seguinte as atualizações do playbook
+
+5 - Verificar tickets parados
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ORIENTAÇÕES PARA PREENCHIMENTO E ATENDIMENTO DE TICKETS - DICAS:
+
+
+Nos tickets:
+
+Verificar os históricos de alterações.
+Inserir um assunto claro, direto e objetivo.
+Preencher corretamente os campos obrigatórios: Serviço, Origem, Categoria e Urgência.
+Encaminhar a ação pública
+Por fim, realizar a alteração do status.
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# RELATÓRIO DIÁRIO
+
+- números
+- revisar tickets em atendimento
+- responder
+
+relatório diário e semanal:
+- tickets novos
+- tickets resolvidos/fechados
+- reunião de onboarding novas iniciadas
+- reunião de onboarding continuidade
+- reunião de onboarding encerradas
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+EDUCAR O CLIENTE:
+
+sempre pedir o print para o cliente
+não pedir o nome do cliente e a gente ir pesquisar... pede para o cliente enviar o print, ensinar ele
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+EVIDÊNCIAS:
+
+Sempre ter evidências para não ter motivo de contestação.
+~Carlos: “eu costumo dizer que toda prova será usada em um tribunal, assim dá a ideia de que sempre precisamos ter o maior número de informações, prints, conversas e telefonemas… prova nosso empenho em resolver o problema”
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ENVIAR PARA EQUIPE DE ANÁLISE
+
+Fluxo caso necessário apoio da análise/dev (Carlos/Marcelo/Matheus):
+
+1. não pode encaminhar para análise sem evidências
+“Cliente, por favor, nos envie o print x… relatório y… extrato z….
+
+2. Adicionar o e-mail dos 3 analistas em CC
+
+3. Mantenha o ticket em seu nome para acompanhar o andamento
+
+4. enviar msg interna, fica registrado para nós 
+
+5. Para o caso de URGÊNCIA, criar um tópico no Discord
+
+6. a cada período (manhã/tarde), se a equipe de apoio não responder, cobrar no grupo ;)
+
+7. verificar se existem retornos ao cliente a cada período (manhã/tarde)
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------# CRIAR TÓPICO NO DISCORD
+Nome do Cliente - Assunto
+Link do Ticket
+Explicar detalhadamente a solicitação
+@ dos participantes do tópico
+
+# CREDENCIAMENTO DE BOLETO, PIX E CARTÃO PJBANK
+
+Fluxo descrito no Doc: Playbook de Implantação - FaturÁgil pesquisar pelo “CREDENCIAMENTO DE BOLETO, PIX E CARTÃO PJBANK”
+
+# COBRANÇA UTILIZANDO CARTÃO PJBANK
+
+Quando cliente cria um plano parcelado a cobrança acontece da seguinte forma:
+💳 Parcelado (uma única cobrança em n parcelas)
+R$12000 parcelado em 12x de R$1000, consome 12k de limite
+mesmo pagando em parcelas de R$1000,
+o cartão reserva imediatamente os R$12000 do limite total.
+
+🔁 Recorrente (cobrança individual mês a mês)
+se for recorrente, 1k processado todo mês
+numa cobrança recorrente (assinatura/mensalidade),
+apenas R$1000 é cobrado por vez,
+consumindo somente R$1000 de limite a cada mês.
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ANEXAR CONVERSA COM FORNECEDOR NO TICKET
+
+Ex: imprimir o nosso e-mail em PDF e anexar como AÇÃO INTERNA no ticket do movidesk
+ou acessar o Ticket da TECNO e imprimir em PDF e anexar como ação interna no ticket do movidesk
+fazendo essa prática, temos centralizado em nosso ticket
+
+a PJBANK mudou de sistema de Helpdesk  e perdemos todo o histórico de tickets de lá
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# E-MAIL
+
+Limite de envio diário de e-mails GMAIL:
+Contas padrão do Gmail: 500 e-mails por dia. 
+Contas do Google Workspace: 2.000 e-mails por dia.
+
+# E-MAIL PELO DOMÍNIO "embradev"
+
+Nunca encaminhar e-mails pelo domínio suporte@embradev.com.br para o cliente
+Sempre responder o cliente pela ferramenta de HelpDesk.
+De preferência, fazer citações com aspas.
+Em alguns casos bem específicos e pontuais, é possível enviar um print do que o Fornecedor informou (TECNOSPEED, PJBANK).
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ABRIR CHAMADO NO FORNECEDOR: PJBANK
+
+https://email.uolhost.com.br/embradev.com.br/
+Login: suporte@embradev.com.br
+Senha: ***
+
+Novo e-mail
+Destinatário/Para
+Clicar no bonequinho dentro do campo
+Selecione Grupos
+Clique em “Novo Chamado PJbank”
+Clique em “Continuar escrevendo”
+Assunto
+Geralmente, o mesmo do nosso ticket
+Mensagem
+Faça a solicitação com o máximo de evidências (incluir os dados da Credencial que consta no Meio de Pagamento)
+Incluir a abertura do chamado no ticket do Movidesk
+Tirar o print com o número do chamado da PJBank
+Imprimir o email/chamado em PDF
+Anexar essas informações em uma nova AÇÃO INTERNA
+
+
+
+
+
+
+
+
+
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# SUPORTE PERTO DO HORÁRIO DE SAÍDA
+
+Cliente pediu Suporte/Chat próximo das 12:00 ou das 18:00?
+É necessário avançar além deste horário para atender o cliente?
+
+Limite de atendimento/suporte 18h30 para os colaboradores (caso puder se estender um pouco além do expediente)
+
+> Se o operador entender que é possível continuar após almoço/próximo dia:
+
+AÇÃO 1. Perguntar ao cliente para continuar no próximo horário útil
+“Vou precisar me ausentar, pois já passou do meu horário, tudo bem? Poderíamos dar continuidade após o almoço ?
+Assim que você acessar o FaturÁgil novamente, entre no Chat e informe o ticket 996.
+”
+
+
+> Caso o operador identifique que é uma situação grave/urgente e requer resolver no momento do atendimento:
+1 - Chamar o coordenador do Suporte para avaliar. 2 - Chamar os sócios (CARLOS ou MARCELO)
+
+> Caso o Cliente solicite que tenha que resolver no momento do atendimento.
+1 - Chamar o coordenador do Suporte para avaliar. 2 - Chamar os sócios (CARLOS ou MARCELO)
+
+“Cliente, só um momento, por favor. Vou verificar com meu coordenador se ele pode dar continuidade no atendimento.”
+
+Deu 18:00 e ainda tem cliente no Chat:
+
+- No MÁXIMO 18:15, enviar msg:
+“Cliente X, vou precisar me ausentar, podemos dar continuidade na segunda-feira de manhã, tudo bem?”
+
+Se for algo grave/urgente, chamar os sócios (CARLOS ou MARCELO) para dar continuidade:
+- Que irá avaliar se resolve na hora;
+- Ou se resolve final de semana;
+- Ou se será necessário analisar com mais detalhes, para dar sequência na semana seguinte;
+- E enviar a mensagem com um PARECER ao cliente para ele ficar mais tranquilo.
+
+Evitar ao máximo passar das 19h atendendo o Cliente.
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# PRECISA DE AJUDA PARA ATENDER CLIENTES DIFÍCEIS?
+
+se precisar de ajuda para atendê-la, chama o @Carlos Alberto Sella  
+
+uma estratégia interna que podemos adotar, caso não esteja conseguindo atender clientes mais difíceis:
+- fazer a troca de agente 
+Ex: "João, vou precisar me ausentar... Carlos irá dar continuidade no seu atendimento ;)"
+
+Outra estratégia, é: se foi você que a atendeu por último, outro colega atendê-la dessa vez...
+
+na Tecno por ex, vejo que eles fazem a rotatividade de atendente 🙂
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# TELEFONES DOS CLIENTES - CONTATO VIA LIGAÇÃO
+
+Caso não conseguir contato com o telefone cadastrado, as vezes terá só o celular no contato do cliente:
+
+Pesquisar em outro usuário da empresa, pode ter mais usuários 
+Pesquisar no site/redes sociais do cliente 
+Pesquisar no Google
+Atualizar os telefones que funcionam no cadastro do cliente 
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# FRAUDE DE BOLETO
+
+Fluxo caso receber solicitação de fraude de boleto:
+
+1. Usar a MACRO: Boleto - Análise e possibilidade de Boleto FRAUDADO
+Editar o início da mensagem padrão, caso a gente já tenha recebido os documentos identificando a possibilidade de fraude.
+
+2. Se for boleto de CONVÊNIO PRÓPRIO do cliente, acompanhar e prestar orientações conforme MACRO já enviada no item 1.
+
+3. Se for boleto PJ BANK, é necessário abrir CHAMADO enviando todas as evidências e documentos.
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ALTERAÇÃO NO CNPJ: FANTASIA, RAZÃO SOCIAL, ENDEREÇO
+
+Quando algum cliente solicitar alteração cadastral, FANTASIA, RAZÃO social, ENDEREÇO, envia para o email financeiro@faturagil.com.br com o cartão CNPJ para CARLOS atualizar nosso cadastro de faturamento interno (cobrança dos clientes FaturÁgil).
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# CADASTRO DE NOVOS USUÁRIOS NO HELPDESK (MOVIDESK)
+
+Eventualmente, algum novo funcionário se cadastra no Helpdesk para suporte no Chat ou via E-mail.
+
+Pedir o nome completo do Usuário
+Atualizar o nome do Usuário
+Vincular o USUÁRIO na Empresa, caso identificado
+
+Se por acaso, não conseguir pegar o nome (abandonou a conversa)
+Quando não descobrir o sobrenome, coloca o NOME DA EMPRESA sendo o SOBRENOME
+Vincular o USUÁRIO na Empresa, caso identificado
+
+
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# CANCELAMENTO DE ASSINATURA FATURÁGIL
+
+CLIENTE= gostaríamos de fazer o cancelamento da assinatura
+
+SUPORTE= “Compreendo e agradeço pela parceria até o momento.”
+SUPORTE= “Para darmos continuidade no cancelamento:”
+SUPORTE= “Gostaríamos de um feedback seu, se o FaturÁgil está atendendo as necessidades? Se você está gostando do FaturÁgil?”
+SUPORTE (opcional)= “Por gentileza, para melhoria de nossos serviços, poderia nos informar o motivo do cancelamento?”
+
+CLIENTE= o cliente informa o motivo
+DICA P/ SUPORTE (opcional)= “aqui o Suporte pode discutir mais informações a respeito dos motivos.”
+
+SUPORTE= “A rescisão contratual é formalizada pelos e-mails: financeiro@faturagil.com.br ou atendimento@faturagil.com.br , e também, pode ser aqui pelo Chat. Sua solicitação de rescisão contratual já está registrada aqui no ticket.”
+SUPORTE (opcional)= “Vou verificar se o responsável pelo Financeiro está disponível para gerar o detalhamento.”
+
+OBS= Se o Financeiro estiver disponível, é só pedir para o Cliente aguardar, que o Financeiro assume o Chat. 
+OBS= Se o Financeiro não estiver disponível, informe:         “O Financeiro está em outro atendimento neste momento, e ele irá lhe enviar o detalhamento via e-mail” 
+
+Obs: Para agilizar o atendimento, adicionar o e-mail do financeiro@faturagil.com.br como cópia do atendimento do chat, desta forma o financeiro já recebe este atendimento como pedido do cancelamento, não sendo necessário o cliente enviar um e-mail fora do atendimento do chat.
+
+
+ATIVIDADE DO SUPORTE= Conferir 
+1 - Copiar e colar no Chat, o e-mail do Cliente perguntando a ele se o e-mail está correto. (Se não estiver, o cliente irá informar outro)
+2 - Adicionar o financeiro@faturagil.com.br em CC
+
+Tickets com exemplos de cancelamento:
+OKEYDOKE https://atendimento.faturagil.com.br/Ticket/Edit/559
+“eu não tenho do que reclamar não, sempre tive todos os problemas solucionados rapidamente. O único motivo é o preço mesmo, encontramos uma solução que nos custará a metade do valor fixo”
+“hoje eu pago R$100 com vcs e vou pagar R$50, e as taxas são bem próximas”
+INSAFE GESTAO DE NEGOCIOS https://atendimento.faturagil.com.br/Ticket/Edit/576 
+“o FaturÁgil auxiliou bastante o nosso negócio”
+“será implantando o NIBO”
+qual seria o motivo de migrar para o NIBO?
+“A opção de importar o arquivo OFX do extrato bancário ou como temos o banco bradesco,  nibo tem a opção de buscar as movimentações bancárias sem importar o OFX”
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# FLUXO PARA SUGESTÕES
+
+Pesquisar antes, e/ou perguntar para os analistas antes de enviar direto para análise.
+
+Verificar no sistema se o sugerido existe 
+Se não encontrar, pesquisar na base de conhecimento 
+Caso ainda não encontrar, perguntar para os analistas (Carlos/Marcelo)
+Sendo uma sugestão mesmo, usar a MACRO: Sugestão 01 - recepção e encaminhamento para a equipe de análise
+Após análise, incluir no JIRA
+Incluir AÇÃO INTERNA no TICKET com o TÍTULO da tarefa no JIRA e o LINK 
+Incluir análise se será feito ou não
+Decidir se irá desenvolver e informar a previsão, usar a MACRO: Sugestão 02 - aprovado para análise e desenvolvimento
+Caso não for desenvolver/ não aprovado, usar a MACRO: Sugestão 04 - adicionado na lista de sugestões para análise futura sem previsão
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# TAMANHO DA LOGO DO CLIENTE
+
+A melhor extensão é JPG, pois PNG possui fundo transparente.Tamanho ideal: entre 200x130 px até 200x200 px
+Por exemplo: 200x150 tbm pode...
+Ferramenta para edição de imagens: https://www.iloveimg.com/ 
+
+Redimensionar imagem: https://www.iloveimg.com/resize-image 
+Converter PNG p/ JPG: https://www.iloveimg.com/convert-to-jpg 
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# RECEITA OPERACIONAL X RECEITA NÃO OPERACIONAL
+
+O que é receita operacional?
+A receita operacional é o resultado financeiro de uma empresa. Em outras palavras, é a soma de todos os recursos originados pela venda ou prestação de serviços de uma empresa, de acordo com sua atividade-fim.
+
+Esse indicador é a primeira informação apresentada no Demonstrativo de Resultados do Exercício (DRE), sendo dividido em dois tópicos: 
+
+Receita operacional bruta (ROB): são os ganhos totais das atividades-fim de uma empresa, antes da dedução de qualquer tipo de imposto. Ou seja, é todo o dinheiro que entrou em caixa resultando dos bens vendidos ou serviços prestados pela companhia;
+
+Receita operacional líquida (ROL): é o que resulta da Receita Operacional Bruta após a declaração de todos os impostos que incidem sobre a venda. 
+
+O que é receita não-operacional?
+A receita não-operacional, também conhecida como receita financeira, diz respeito a todos os valores recebidos por uma empresa que não tenham origem em sua atividade-fim.
+
+Alguns exemplos desse tipo de receita são os juros recebidos, rendimento de poupança, dividendos de aplicações financeiras, entre outros.
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+# CONFIGURAÇÃO MEIO PAGAMENTO CNAB
+
+=> Configure o CNAB conforme o print do Banco
+
+
+
+
+
+
+#CRESOL
+
+Link: http://confesolhomolog.governarti.com.br/cooperado/Login no sistema: valandrovNome do beneficiário: CONDOMINIO RESIDENCIAL VALANDRO V
+CPF/CNPJ:   35.298.387/0001-99
+
+
+
+
+
+# NÚMERO DE CARTEIRA 
+#ITAÚ
+No Banco Itaú existem dois tipos de Carteira suportados: 109 e 112.
+Carteira 109: O Nosso Número é gerado pela FaturÁgil e solicitado ao banco para registro. Caso ocorra duplicidade do Nosso Número ou qualquer outro problema, a rejeição é apontada já na importação do arquivo pelo Banco.
+Carteira 112: O Nosso Número é gerado diretamente pelo Banco. Nesse caso, o serviço do banco é responsável por criar o Nosso Número, e o cliente deve importar o arquivo de Retorno do Registro do Boleto ao FaturÁgil para que o Nosso Número seja atualizado no sistema.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#SICOOB
+
+
+
+
+#UNIPRIME
+Posição Retorno:
+71 - 81 - NOSSO NÚMERO (11 Posições)
+109 - 110 - Ocorrência de retorno (06 para liquidação)
+
+
+#BTG PACTUAL
+
+Carteira 1 - Cobrança Simples
+
+# API
+
+O FaturÁgil possui API de integração.
+
+
+
+
+Leitura complementar:
+APIs, explicando de forma simpleshttps://www.linkedin.com/pulse/apis-explicado-de-forma-simples-americo-chaquisse/
+
+O cliente informa que a API está fora, qual o fluxo?
+Obs: A API não pode ser testada pelo browser diretamente, são necessários e obrigatórios alguns parâmetros passados no Header.
+
+1) Solicite a chave da API do cliente (Menu: Configurações -> Integrações)
+OBS: Verifique com o cliente se a Chave API está ativa.
+
+
+2) Execute em seu Postman o endpoint: https://api.faturagil.com.br/v1/clientes
+No Postman, é necessário configurar 2 Headers:
+x-api-key (Chave API que o cliente informou), ex: 11ed4456-f403-424d-865b-b6549b8074b9
+Content-Type: application/json (sempre)
+
+
+
+Ao clicar no botão Send, o Postman fará a execução do endpoint com os Headers informados:
+
+
+Obs: Caso retorne o resultado da consulta, significa que a API está disponível e funcionando corretamente. O retorno esperado de sucesso é o código 200.
+
+-----------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+----------------------------------------------------------------------
+# WEBSERVICE API NFS-E --- MENSAGEM DE VALIDAÇÃO: Contate o Suporte Técnico. Status: 502
+
+Ticket Exemplo: [Robô FaturÁgil] CANCELAR CANCELAR <> Cliente: HOTEL FAZENDA VALE ALVORADA EIRELI - GEMPER GESTÃO DE PONTOhttps://atendimento.faturagil.com.br/Ticket/Edit/4987 
+
+Confere no FaturÁgil do cliente, se a nota está sendo impressa, se estiver imprimindo, só fechar o ticket informando que a nota já está imprimindo normalmente
+Pode enviar como evidência o print da nota/anexar o PDF no ticket
+ou o print do ícone de envio no e-mail 
+Se não imprimir e der erro/rejeição, entrar no chat da Tecno e passar o ID da nota para eles re-gerar o PDF.
+
+
+
+
+
+
+mento > Lançamentos Extras
+
+
+PASSO A PASSO:
+
+NFSE com Retenção: Para que a retenção seja aplicada no boleto do cliente é necessário ajustar a emissão de nota fiscal para uma das opções abaixo:
+1 - Emissão da NFSe na Emissão da Cobrança, ou
+2 - Emissão da NFSe autorização após pagamento
+Obs: Nessas duas opções, a NFSe é gerada antes de gerar o boleto, somente dessa forma é possível saber as retenções para considerar no boleto.Desta forma o valor dos impostos são descontados do Valor Bruto da Fatura e repassado o Valor Líquido para o cliente.
+
+Artigo sobre Emissão de Nota Fiscal de Serviço (NFSe)
+https://atendimento.faturagil.com.br/kb/pt-br/article/527245/novo-artigo?preview=true&revisionId=2181178&versionId=432824
+
+# Nota Fiscal de Serviço# ENVIO NOTA FISCAL DE SERVIÇO (NFSe)
+DIGITALDOC: Arquivo da Assinatura/Contrato indisponível
+Ação a realizar para resolver:trocar o link do google drive que está no anexo da assinatura contrato desse cliente
+
+
+
+# NFSe PORTAL NACIONAL
+Identificamos que, pode ocorrer de recebermos uma rejeição em relação a Chave de Emissão. Neste caso, se o cliente não tiver cancelado a nota, pode-se verificar se a nota está autorizada no PlugNotas. - Caso esteja autorizado, pode-se clicar na canetinha do JSON e inserir manualmente a Chave de Emissão disponível no PlugNotas.
+Atenção: Se cliente realizou o cancelamento da emissão no FaturÁgil para emissão de uma nova, há a possibilidade de ocorrer a duplicidade desta nota. Sendo necessário entrar no portal para cancelamento do antigo. 
+
+
+# COMISSÃO DE FATURA AVULSA
+A inclusão de comissão em uma fatura avulsa1 - É realizada no menu faturamento - faturas aba de comissão
+A Comissão com Link de Pagamento pode ser feita de 2 formas:
+1 - Diretamente na assinatura do cliente através do menu assinaturas e serviços - assinaturas e contratos 
+2 - No menu de Faturamento Faturas no campo itens da fatura Obs. Se o link de pagamento tratar-se de um pagamento parcelado a comissão também será parcelada 
+
+# RELATÓRIO COMISSÃO
+
+Caso cliente esteja declarando problema no relatório de comissionamento, verifique a configuração em Configurações GERAL> aba Geral > Controle de Comissão  
+
+Verifique se o controle de Comissão por Data de Projeto está Habilitado/Desabilitado. Isso mudará o que será exibido no relatório.
+
+# RELATÓRIO COBRANÇAS POR FORMA DE PAGAMENTO (BOLETO, PIX, ETC.)
+CAMINHO DE ACESSO: Menu: Relatórios → Financeiro → Cobranças e Boletos
+PASSO A PASSO:
+Acessar o menu: Relatórios → Financeiro → Cobranças e Boletos
+Clicar no botão "Filtros Avançados"
+No campo "Forma de Pagamento", selecionar o tipo desejado (ex: Boleto, PIX, Transferência/Depósito, etc.)
+Clicar em "Buscar" para confirmar se há registros no período
+Clicar em "Relatório XLS" para exportar o arquivo
+OBSERVAÇÃO: Só é possível filtrar uma forma de pagamento por vez. Para obter dados de diferentes formas (ex: boleto e PIX separadamente), repita o processo alterando o campo "Forma de Pagamento" em cada extração.
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# GERAÇÃO DE BOLETOS
+
+inter : 
+Valor mínimo de R$2,50 máximo R$1.000.000,00
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+# PAGAMENTOS DE BOLETOS PJBANK VIA QRCODE
+será usada nas ferramentas e no atendimento do chat
+:100:
+Clique para reagir
+:thumbsup:
+Clique para reagir
+:thumbsdown:
+Clique para reagir
+Adicionar reação
+Responder
+Encaminhar
+Mais
+
+Dúvidas:
+Quanto tempo demora para a PJBank realizar o repasse bancário?
+Todos os Repasses Bancários são realizados no formato D+2.
+
+Quanto tempo demora para ocorrer o Retorno Bancário para o FaturÁgil ?
+A identificação ocorre em alguns minutos quando se trata de pagamento realizado via QRCode.
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+# INFORMAÇÃO DE BANCO DO BRASIL NO BOLETO PJBANK
+
+O PJBANK é intermediador de pagamentos, e utiliza os bancos tradicionais para fazer a intermediação do pagamento. 
+Por exemplo, o PJbank utiliza as bandeiras BANCO DO BRASIL, ITAÚ, SANTANDER para fazer a intermediação.
+ Quando o cliente final faz o pagamento, o dinheiro passa por uma conta corrente interna na PJBank, ao qual o PJBank faz o repasse automático em D+2 para qualquer banco de destino definido pela empresa (Ex: ITAÚ, SICOOB, SANTANTER, NUBANK... qualquer banco).
+
+
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+== FLUXOS ==
+
+# CLIENTE REALIZOU O PAGAMENTO E NÃO HOUVE BAIXA NO FATURÁGIL
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Como verificar se o boleto foi liquidado:
+Normalmente, no banco existe uma seção relacionada a Gestão de Cobranças. Geralmente nesta tela contém todas as informações que precisamos para identificar o motivo da cobrança/boleto não estar liquidado na FaturÁgil.
+
+Vide exemplo do Banco Inter:
+-> O status cancelado são cobranças que foram canceladas ou no banco ou solicitado o cancelamento pelo sistema da FaturÁgil.
+-> O status Recebido por Pix/Boleto é exemplo de uma cobrança que teve sua liquidação feita por meio de uma Pagamento via PIX. 
+
+
+
+
+
+# LIQUIDAÇÃO DAS COBRANÇAS/BOLETOS (RETORNO BANCÁRIO) E CONCILIAÇÃO DO CONTAS A RECEBER (FINANCEIRO):
+
+1 - Este processo ocorre em duas etapas, pois são dois módulos distintos.
+2 - Primeiro, é realizado o retorno bancário, via API (retorno automático pelo banco) ou via importação de Retorno CNAB.
+3 - Assim que o fluxo acima é concluído, a Conciliação do Contas a Receber entra na fila para conciliação, que é processada em alguns minutos.
+4 - Após essa segunda etapa de conciliação concluir, as informações são atualizadas na tela do Extrato de Movimentações.
+
+
+
+# OPEN FINANCE
+
+O que é?
+O Open Finance ou Sistema Financeiro Aberto, é uma iniciativa feita e regulamentada pelo Banco Central do Brasil que irá revolucionar o seu relacionamento com o sistema financeiro. Dessa forma, você poderá escolher as melhores ofertas de produtos e serviços entre as instituições, de forma justa.
+
+Como utilizar?
+Para utilizar o Open Finance é necessário autorizar a função no app de seu banco.
+
+Como funciona?
+O Open Finance funciona por meio do compartilhamento de dados e serviços entre as instituições financeiras. Após a sua autorização, consegue-se comunicar com outras instituições em que exista relacionamento e centraliza-se as principais informações no app de seu banco.
+
+
+Extrato do Inter no FaturÁgil
+
+Funcionalidade de consultar o extrato bancário do Inter.
+
+É necessário habilitar a opção: Consultar Extrato e Saldo dentro de API Banking
+
+Menu: Soluções para sua Empresa -> Minhas Integrações
+
+
+
+Selecione a opção: Editar Integração
+
+
+
+
+
+
+
+
+Abra a opção de Internet Banking
+
+
+
+
+
+Selecione a opção Consultar Extrato e Saldo
+
+
+
+
+Atenção: Para editar o Inter solicitará um SMS de validação
+
+
+
+
+
+
+Caso for gerar o extrato e não estiver habilitado no Inter, apresentará a mensagem abaixo:
+
+
+
+
+
+
+## PROBLEMA ESTORNO BOLETO
+
+
+Verificar se o boleto pago gerou um registro de RECEITA em Receitas/Despesas.
+Verifique se os valores na tela de Cobranças e Boletos e o registro na tela de Receitas/Despesas.
+
+Problemas mapeados:
+Mora/Multa configurado no MEIO DE PAGAMENTO com o mesmo Plano de Conta da Assinatura gera mensagem de erro no Estorno do boleto. (Isso é erro de configuração. Plano de Conta não deve ter o mesmo Plano de Conta das Assinaturas.)
+Solução:
+Ir no Meio de pagamento que foi utilizado para pagamento do boleto e realizar a alteração do plano de conta.
+Identificar na Tela de Receitas/Despesas o registro gerado pela marcação de pagamento da cobrança e identificar se a MORA/MULTA está com o mesmo Plano de Conta da Assinatura como na imagem exemplo:
+ 
+Clicar na ‘canetinha’ e modificar o Plano de Contas de acordo com o que foi ajustado no Meio de Pagamento.
+OBS: Este problema não deve ser recorrente pois depende da configuração feita. E quem configura o meio de pagamento é a Faturágil.
+
+
+# CERTIFICADO DIGITAL
+Este processo destina-se à geração das chaves pública e privada a partir do certificado digital do CLIENTE, caso ele não consiga gerá-las seguindo as instruções da macro.
+
+O cliente deve possuir um certificado no formato .pfx para que seja possível gerar as chaves pública e privada.
+O nome do certificado não deve ser muito longo, como por exemplo: “FATURAGIL EMBRADEV LTDA0000121321.pfx”.
+Se o nome estiver nesse formato, recomenda-se renomeá-lo para algo mais simples, como “FATURAGIL.pfx”.
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# FLUXO PARA VERIFICAÇÃO DE ERRO DE FATURAMENTO 
+Este procedimento detalha o fluxo de verificação para identificar a origem de erros no processo de faturamento.
+Atenção: Se o Faturamento não ocorreu na data esperada, verifique se o vencimento cai em dia NÃO útil. Isso é importante, pois se a opção abaixo na Configuração GERAL estiver selecionada, vai deslocar a Data de Faturamento.
+
+1. Análise Inicial do LOG 
+A primeira etapa é a checagem dos registros do sistema e das configurações básicas do cliente:
+LOG de Automações: Acesse a tela de LOG de Automações para verificar se há algum registro de erro ou mensagem de Validação do Faturamento.
+2. Conferir se houve Atualização no cadastro do cliente, se houve
+Identificar se houve modificações recentes que possam ter impactado o faturamento:
+Verifique se houve Atualização no cadastro do cliente.
+Quais foram as alterações? (questionar cliente).
+Quando ocorreram as alterações?
+Houve alteração antes ou depois da Data do Faturamento ?
+// Caso haver alteração na Data de Vencimento ou Grupo de FaturamentoSe Grupo de Faturamento foi alterado para maior quê o (Dia da Cobrança (Vencimento) - Dia atual) = Não irá rodar o faturamento
+Cadastro do Cliente: Confira no cadastro do cliente qual é o Grupo de Faturamento configurado (por exemplo: AUTOMÁTICO (X dias) ou MANUAL).
+
+3. Houve faturamento de outro cliente da mesma organização no dia?
+Mesma Organização: Houve faturamento de outro cliente da mesma organização no dia? Verifique na tela de Faturas a Origem da Fatura (se foi AUTOMÁTICO ou MANUAL).
+4. Houve faturamento de outro cliente da mesma organização no dia?
+Outras Organizações: Assim como informado acima no item 3, verifique se em outras organizações, se o faturamento rodou corretamente, validando se pode ter ocorrido alguma instabilidade na Automação do Faturamento.
+5. Existe assinatura válida para o cliente, como verificar se deveria ter faturado?
+Verifique se a assinatura do cliente está em vigência e se deveria, de fato, ter gerado uma fatura
+Confira a Competência Inicial e Competência Final e verifique conforme a vigência informada, se o faturamento deveria ter ocorrido
+Simulação: Realize uma Simulação de Faturamento para validar os dados da assinatura e confirmar se o faturamento era esperado.
+6. Existe fatura cancelada para aquele cliente? Quando existe fatura cancelada, qual o comportamento do sistema?
+Se o status da fatura estiver definido como Cancelada, o fluxo da automação não irá refaturar essa fatura, terá que ser realizado o faturamento manualmente
+7. Erro de meio de pagamento, onde verificar?
+Na tela de LOG de Automações verifique se houve registro de erro ou mensagem de Requisição Inválida ou solicitando a Atualização do Certificado Digital
+Para que o processo de faturamento funcione corretamente, é importante que o Meio de Pagamento esteja funcionando corretamente e a Integração Autorizada
+
+## Boleto não registrado 
+1- Verificar se o NOSSO NÚMERO informado no MEIO DE PAGAMENTO está de acordo com o último boleto emitido pelo cliente no banco.
+2 - PIX SICOOB: Quando houver o seguinte evento de erro ao boleto:"mensagens":[{"mensagem":"Beneficiário não habilitado para utilizar o Pix.","codigo":"5002"}
+Deve ser acionado o Gerente do Banco ou Gerente Regional de produto da Singular para poder ativar a cobrança por PIX do cliente.
+Obs: a instrução também foi adicionada a Macro do Boleto Híbrido com API PIX SICOOB 
+
+
+
+
+
+
+
+
+Meio de Pagamento:
+Adicionar aqui algumas particularidades de configuração para os Meios de Pagamentos dos Clientes.
+
+Sicredi: 
+No sicredi para que o código de barras possa ser lida corretamente no boleto gerado pela faturágil o campo “Conta Bancária” deve ser preenchido com o Código Cliente/Beneficiário. 
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# TICKET ABERTO ATRAVÉS DE RESPOSTA AUTOMÁTICA PELO E-MAIL DO CLIENTE
+
+PROBLEMA:
+O cliente possui uma configuração de e-mail que envia resposta automática. Quando um ticket é marcado como resolvido, o sistema envia um e-mail de finalização e o e-mail do cliente automaticamente responde, gerando um novo ticket. Isso cria um loop de aberturas de ticket.
+
+SOLUÇÃO:
+Nestes casos específicos, pode-se realizar a exclusão do ticket quando for identificado que se trata de resposta automática.
+
+COMO IDENTIFICAR:
+- Verificar se o conteúdo da mensagem é uma resposta automática (ex: "Recebi seu e-mail, retornarei em breve").
+- Conferir se o ticket foi aberto imediatamente após o envio de uma notificação do sistema.
+- Observar o padrão de horários e a sequência de aberturas.
+
+EXEMPLO:
+
+
+OBSERVAÇÃO:
+Esta ação de exclusão deve ser aplicada apenas em casos comprovados de resposta automática, para evitar a exclusão indevida de tickets legítimos.
+
+
+
+# GERAR LINK VIA MEET (Calendar)
+
+Acessar o https://calendar.google.com/calendar/u/0/r
+Clique no dia que irá realizar o meet
+Em Adicionar Título seguir o padrão “FATURÁGIL + NomedaOrganização”, exemplo “FATURÁGIL  + GESTRAN”
+Clique em “Adicionar videoconferência do Google Meet”  para gerar link do meet
+Salvar 
+
+
+
+# INICIAR ATENDIMENTO VIA LIGAÇÃO
+
+Quando o técnico do suporte entrar em contato com o cliente, orientamos que inicie o atendimento do seguinte formato:
+“FaturÁgil, Lesley, bom dia/tarde, gostaria de falar com o Carlos a respeito do  ticket 0000…, o Carlos está disponível no momento?” 
+Se sim, dar continuidade no atendimento.
+Se não, informar no ticket que o cliente não estava disponível no momento do contato.
+Quando atendemos uma ligação feita pelo cliente para o suporte.
+“FaturÁgil, Lesley bom dia/tarde, com quem eu falo? Como posso lhe auxiliar ?”
+
+ATENÇÃO: Sempre registrar todos os detalhes do que foi tratado através da ligação no ticket.# CONFIGURAÇÃO DE E-MAIL / NFS-E / MEIO DE PAGAMENTO
+Responsabilidade do setor de Implantação
+Equipe de Suporte pode atender e realizar a configuração? SIM!
+Para o caso dos implantadores estarem em atendimento e não for possível atender o cliente naquele momento, geralmente aguardando no chat:
+A equipe de Suporte pode realizar a configuração para adiantar o processo.
+Comunicar o implantador sobre o atendimento, mesmo em caso de sucesso.
+Em caso de dúvida, acionar à coordenadora Lesley
+
+
+# FLUXO DE RETORNO AO CLIENTE
+
+Enviar e-mail ao cliente com a ação realizada.
+Caso o cliente não responda ao e-mail, realizar ligação após 1 hora do envio da ação..
+Se o cliente atender a ligação, registrar e enviar ação descrevendo o que foi tratado durante o contato.
+Caso o cliente não atenda, registrar uma ação informando a tentativa de contato realizada.
+No próximo período (manhã/tarde), realizar nova tentativa de ligação ao cliente.
+Após o contato ou tentativa, registrar as informações no ticket.
+
+
+# ATENDIMENTO AO CLIENTE
+Sempre que atender um cliente via chat, ligação ou e-mail:
+Pesquisar tickets com assunto semelhante.
+Mesclar o ticket atual ao ticket antigo
+Enviar ação atualizando o cliente sobre o andamento do atendimento
+
+# PJBANK -  ALTERAÇÃO DA CONTA DE REPASSE
+
+Quando cliente já possui conta na PJBank credenciada funcionando corretamente e solicita alteração da conta de repasse. 
+Orientamos o seguinte:
+Coletar os dados Bancário da Nova Conta
+Questionar o cliente se os repasses em aberto devem continuar caindo na conta antiga, ou devem ser repassados para a nova conta.
+Enviar a macro Credenciamento de boleto PJBank, solicitando os dados para o cliente
+Preencher as informações da Macro Credenciamento de boleto PJBank
+1º - Cadastrar Nova Conta Corrente 
+2º - Inativar o Meio de Pagamento Atual 
+3º - Cadastrar o Novo Meio de Pagamento (todos os clientes com o meio de pagamento antigo, serão alterados de forma automática para o novo meio de pagamento, certo?) 
+4º - Abrir solicitação de credenciamento na PJBank com os dados da nova Credencial já cadastrada no FaturÁgil. 
+5º - Informar para a PJBank se os repasses em aberto devem continuar caindo na conta antiga, ou devem ser repassados para a nova conta.
+Email modelo para abrir na PJBank  ()
+OBS: Sempre anexar o Contrato Social.
+OBS 2: A equipe mesmo pode preencher esses dados, quando trata-se de nova conta ou alteração de uma existente (Uma boa prática é coletar esses dados do primeiro ticket de credenciamento, preenchido pelo cliente)
+
+A organização ______________________________ solicitou mudança da conta de repasse.
+Segue CREDENCIAL ANTIGA: _______________________________________
+Segue NOVA CREDENCIAL: _________________________________________
+Dados da nova credencial:
+Credencial PJBank: _____________________________________________
+Data Registro: //________ :
+CPF/CNPJ: _________________________________________________
+Nome Empresa: ______________________________________________
+Banco: _____________________________________________________
+Agência: _________________________________________________
+Conta: _____________________________________________________
+Quais são os produtos e/ou serviços prestados que serão cobrados via boletos PJBank?
+
+A empresa possui algum site e/ou páginas em redes sociais? Se sim, nos envie o link por favor.
+
+Qual a quantidade de boletos que será emitida mensalmente?
+
+Qual o ticket médio por emissão?# INTEGRAÇÃO MBX – TROCA DA CHAVE API DO MOVIDESK
+mAtenção: Sempre que a CHAVE API do Movidesk for alterada, também deverá ser atualizada na MBX.
+Procedimento para obter a nova Chave API
+Acessar o Movidesk > clicar no ícone de engrenagem > Parâmetros > Chave da API
+
+
+
+Copie a nova Chave API gerada > Encaminhe um e-mail ao suporte@mbxinteligencia.com.br informando a alteração e repassando a nova chave.
+
+
+# AGENDAMENTOS
+Quando agendar uma reunião para outros colegas, escrever na ação/e-mail quem do nosso time irá participar.
+Exemplo: no ticket 30258 ação 3, o Leandro agendou para os participantes: Lesley, Carlos e Marcelo, e o cliente entendeu que apenas Leandro iria participar. 
+
+
+Roteiro proposto
+Passo 1: Classificar (sempre a primeira pergunta)
+
+Para eu te ajudar da forma certa, sua mensagem é sobre:
+
+Algo que não está funcionando como deveria
+Uma dúvida de como fazer algo no sistema
+Algo que você precisa e acha que o sistema não faz
+Cada tipo pede perguntas diferentes, então o resto do roteiro se divide a partir daqui.
+
+Passo 2A: "Não está funcionando"
+
+Em qual tela ou menu isso acontece? (se possível, mande um print)
+O que você fez, passo a passo, antes do problema?
+O que você esperava que acontecesse, e o que aconteceu?
+Me passe um exemplo real: nº da fatura, nome do cliente, boleto, nota fiscal...
+Quando começou? Acontece sempre ou só às vezes?
+Passo 2B: "Dúvida de uso"
+
+O que você quer conseguir no final? (ex.: "mandar a cobrança para todos os clientes vencidos")
+Onde você tentou fazer isso no sistema, e onde travou?
+Passo 2C: "Preciso de algo que o sistema não faz"
+
+Qual problema do seu dia a dia você quer resolver? (o problema, não a solução)
+Como você resolve isso hoje? (planilha, manualmente, outro sistema...)
+Me dê um exemplo real de uma situação em que isso aconteceu.
+Com que frequência acontece, e quantos clientes/faturas envolve?
+Isso seria feito por uma pessoa usando o FaturÁgil ou por outro sistema de vocês conectado ao FaturÁgil (ERP, site, etc.)?
+A pergunta 5 substitui a da "API", em linguagem que o cliente entende.
+
+Passo 3: Confirmar o entendimento antes de encaminhar (obrigatório)
+
+Deixa eu confirmar se entendi: você precisa [resumo com as palavras do suporte], porque hoje [situação atual], por exemplo [caso real]. Está correto?
+
+Esse é o passo que mais evita retrabalho. Se o cliente corrigir o resumo, você achou o mal-entendido antes de ele chegar ao desenvolvimento.
+
+Uso interno (o cliente não vê)
+Depois do passo 3, o suporte classifica o caso sozinho:
+
+Já existe no sistema → orientar o cliente (FAQ ou tutorial)
+Bug → escalar com o exemplo real anexado
+Melhoria / desenvolvimento → registrar com as respostas do 2C
