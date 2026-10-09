@@ -98,13 +98,52 @@ def carregar():
     return _CACHE
 
 
-def _casa(texto_normalizado, tokens):
-    return all(t in texto_normalizado for t in tokens)
+_PARADAS = set("""
+a o e de do da em para com por que na não no os as um uma ao dos das às entre sobre sem até como
+mais mas se então já está ter tem pode isso essa esse eu você ele ela nos na vai ser seu sua meu
+minha qual quais quando este esta isto depois antes porque que seja estiver sendo são foi estar tiver
+""".split())
+
+
+def _tokens(q):
+    saida = []
+    for t in _norm(q).split():
+        if len(t) >= 3 and t not in _PARADAS:
+            saida.append(t)
+    return saida
+
+
+def _variantes(t):
+    v = {t}
+    if len(t) > 3:
+        if t.endswith("oes"):
+            v.add(t[:-3] + "ao")
+        elif t.endswith("ais"):
+            v.add(t[:-3] + "al")
+        elif t.endswith("eis"):
+            v.add(t[:-3] + "el")
+        elif t.endswith("ns"):
+            v.add(t[:-2] + "m")
+        elif t.endswith("es"):
+            v.add(t[:-2])
+        elif t.endswith("s"):
+            v.add(t[:-1])
+    return v
+
+
+def _marca(texto, palavras, tokens):
+    """Quantas palavras do texto casam com os termos (prefixo de palavra)."""
+    total = 0
+    for t in tokens:
+        variantes = _variantes(t)
+        if any(v in palavras or any(p.startswith(v) for p in palavras) for v in variantes):
+            total += 1
+    return total
 
 
 def buscar(q="", time=None, tag=None):
     docs = carregar()
-    tokens = [t for t in _norm(q).split() if t]
+    tokens = _tokens(q)
     time_n = _norm(time) if time else None
     tag_n = _norm(tag) if tag else None
 
@@ -121,20 +160,33 @@ def buscar(q="", time=None, tag=None):
         if not tokens:
             resultados.append(d)
             continue
+        palavras_sec = [_norm(s["titulo"] + " " + s["texto"]).split() for s in d["secoes"]]
+        conj_doc = set()
+        for w in palavras_sec:
+            conj_doc.update(w)
+        no_doc = _marca("", conj_doc, tokens)
+        exigido = 1 if len(tokens) == 1 else max(2, len(tokens) - 1) if len(tokens) > 2 else 2
+        if no_doc < exigido:
+            continue
         casadas = []
-        for s in d["secoes"]:
-            alvo = _norm(s["titulo"] + " " + s["texto"])
-            if _casa(alvo, tokens):
-                casadas.append(s)
-        if casadas:
-            out = dict(d)
-            if len(casadas) != len(d["secoes"]):
-                out["secoes"] = casadas
-            score = len(casadas) * 100
-            if _casa(_norm(d["titulo"]), tokens):
-                score += 1000
-            out["_score"] = score
-            resultados.append(out)
+        score = no_doc * 1000
+        for s, palavras in zip(d["secoes"], palavras_sec):
+            n = _marca("", set(palavras), tokens)
+            if n > 0:
+                casadas.append((n, s))
+                score += n * 100
+        casadas.sort(key=lambda x: -x[0])
+        casadas = [s for _, s in casadas]
+        if _marca("", set(_norm(d["titulo"]).split()), tokens) == len(tokens):
+            score += 5000
+        if not casadas:
+            casadas = [d["secoes"][0]]
+        out = dict(d)
+        if len(casadas) != len(d["secoes"]):
+            out["secoes"] = casadas
+        out["_score"] = score
+        out["_termos"] = tokens
+        resultados.append(out)
     if tokens:
         resultados.sort(key=lambda d: (-d["_score"], d["titulo"]))
-    return resultados, tags_vistas
+    return resultados, tags_vistas, tokens
