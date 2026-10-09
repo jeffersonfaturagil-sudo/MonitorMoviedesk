@@ -55,9 +55,23 @@ parados, mescláveis, pendências, satisfação, plantão e histórico de contat
 - **Minhas pendências / Kanban / Críticos / Atenção / OK**: situação dos tickets.
 - **Mescláveis**: sugestões de mescla (inclusive entre atendentes) + fila local.
 - **Dúvidas / Histórico**: busca nos tickets já resolvidos ("isso já foi resolvido?").
+  - **Indexar período** / **Tudo desde 2021**: monta o índice histórico por intervalo
+    de datas. Usa as duas rotas da API (`/tickets` + `/tickets/past`), mês a mês, e roda
+    em segundo plano com barra de progresso. Como o limite é de 10 req/min, períodos
+    longos demoram (ex.: ~1 mês ≈ 1 min; o histórico completo pode levar bastante).
+  - **Solução pronta**: mostra a última resposta pública/nota interna do ticket.
+- **Equipe / Ranking**: comparativo por atendente (carga, críticos, tempo médio parado,
+  FCR, reabertos, CSAT/NPS).
+- **Satisfação**: permite escolher o intervalo de datas (a API aceita
+  `responseDateGreaterThan`/`LessThan`). O padrão são os últimos 365 dias.
+- **Filtro por serviço** (topo): restringe as listas ao serviço selecionado.
 - **Plantão**: quem está de plantão hoje e os tickets novos do dia.
 - **Contato** (📞): histórico de ligações/tentativas registradas no ticket.
 - **Agenda do dia**: texto editável, salvo no navegador.
+
+> **Histórico da API:** a rota `/tickets` só devolve tickets com `lastUpdate` dos
+> últimos 90 dias; os mais antigos ficam em `/tickets/past`. O painel consulta as
+> duas rotas, então dá para indexar desde o início da conta (2021).
 
 ## Onde ficam os dados
 
