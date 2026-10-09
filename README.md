@@ -79,6 +79,13 @@ parados, mescláveis, pendências, satisfação, plantão e histórico de contat
 - **Implantação**: tickets de clientes em implantação (por tag ou pela lista local
   `painel/implantados.json`, gerada da pasta *CLIENTES - ATIVOS - IMPLANTAÇÃO* do Drive).
   Mostra também as **reclamações** em aberto por atendente.
+- **Processos**: guia local de processos do time — digite o caso ("erro de
+  faturamento", "credenciamento boleto", "e-mail NFS-e") e veja o passo a passo sem
+  abrir documento. Traz os playbooks de `painel/processos/*.txt` (indexados por
+  cabeçalhos `# seção`), com **seletor de agente** (suporte/dev/implantação/
+  coordenação), chips de assunto e síntese por seção. Nas listas de tickets, o botão
+  **📘 Processo** abre o passo a passo do serviço daquele ticket. Diretório/índice:
+  `index.json` mapa título→times/tags; edite o `.txt` e o painel lê na hora.
 - **Macros**: confere se uma macro foi usada num ticket e cruza com os outros tickets
   onde a mesma macro aparece.
   - **Validar ticket**: digite o número do ticket; o painel lê as ações dele e mostra
