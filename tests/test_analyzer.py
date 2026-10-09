@@ -29,6 +29,13 @@ def test_parse_date_isodate_com_fuso():
     assert d.astimezone(timezone.utc).date().isoformat() == "2026-10-09"
 
 
+def test_parse_date_isodate_com_fracao_e_fuso():
+    d = parse_date("2026-10-09T08:00:00.500123-03:00")
+    assert d is not None
+    assert d.astimezone(timezone.utc).hour == 11
+    assert d.astimezone(timezone.utc).minute == 0
+
+
 def test_parse_date_vazio_ou_invalido():
     assert parse_date(None) is None
     assert parse_date("") is None
