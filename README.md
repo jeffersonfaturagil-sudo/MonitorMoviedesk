@@ -65,6 +65,11 @@ parados, mescláveis, pendências, satisfação, plantão e histórico de contat
 - **Satisfação**: permite escolher o intervalo de datas (a API aceita
   `responseDateGreaterThan`/`LessThan`). O padrão são os últimos 365 dias.
 - **Filtro por serviço** (topo): restringe as listas ao serviço selecionado.
+- **Sugestão / tickets parecidos** (💡 nas listas de tickets): busca no índice histórico
+  tickets **já resolvidos** parecidos (assunto, cliente, serviço) ou de **mesmo assunto**,
+  com botão "Solução pronta" — acelera respostas que já foram dadas antes.
+- **Horários**: mapa de calor de abertura de tickets (dia da semana × hora), a partir do
+  cache + histórico — ajuda a dimensionar a escala. Use junto com o Ranking da equipe.
 - **Plantão**: quem está de plantão hoje e os tickets novos do dia.
 - **Contato** (📞): histórico de ligações/tentativas registradas no ticket.
 - **Agenda do dia**: mostra os tickets **resolvidos/encerrados desde o último dia
@@ -94,3 +99,13 @@ parados, mescláveis, pendências, satisfação, plantão e histórico de contat
   Cada pessoa usa o próprio token.
 - Sem Python instalado: `sudo apt update && sudo apt install -y python3`.
 - Se faltar `requests`: `sudo apt install -y python3-requests`.
+
+## Testes
+
+Os testes não consultam a API (usam arquivos com dados de exemplo). Rodam em CI
+a cada push (GitHub Actions, `.github/workflows/tests.yml`).
+
+```bash
+python3 -m pip install pytest requests   # uma vez
+python3 -m pytest -q
+```
