@@ -381,6 +381,14 @@ class Handler(BaseHTTPRequestHandler):
             from dados import build_indicadores
 
             self._json(build_indicadores())
+        elif path == "/api/processos":
+            from processos import buscar
+
+            q = params.get("q") or ""
+            time = params.get("time") or None
+            tag = params.get("tag") or None
+            docs, tags = buscar(q, time, tag)
+            self._json({"processos": docs, "times": ["suporte", "dev", "implantacao", "coordenacao"], "tags": tags})
         elif path == "/api/solucao":
             self._solucao(params.get("id") or "")
         elif path == "/api/historico/status":
