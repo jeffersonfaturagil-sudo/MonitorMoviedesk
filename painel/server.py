@@ -387,8 +387,8 @@ class Handler(BaseHTTPRequestHandler):
             q = params.get("q") or ""
             time = params.get("time") or None
             tag = params.get("tag") or None
-            docs, tags = buscar(q, time, tag)
-            self._json({"processos": docs, "times": ["suporte", "dev", "implantacao", "coordenacao"], "tags": tags})
+            docs, tags, termos = buscar(q, time, tag)
+            self._json({"processos": docs, "times": ["suporte", "dev", "implantacao", "coordenacao"], "tags": tags, "termos": termos})
         elif path == "/api/solucao":
             self._solucao(params.get("id") or "")
         elif path == "/api/historico/status":
