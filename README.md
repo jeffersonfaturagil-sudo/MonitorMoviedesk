@@ -61,7 +61,22 @@ parados, mescláveis, pendências, satisfação, plantão e histórico de contat
     longos demoram (ex.: ~1 mês ≈ 1 min; o histórico completo pode levar bastante).
   - **Solução pronta**: mostra a última resposta pública/nota interna do ticket.
 - **Equipe / Ranking**: comparativo por atendente (carga, críticos, tempo médio parado,
-  FCR, reabertos, CSAT/NPS).
+  FCR, reabertos, CSAT/NPS). Por padrão mostra só o **time de suporte** (Jefferson +
+  Lucas); marque **"mostrar time de dev"** para incluir quem migrou para desenvolvimento
+  (ex.: Leandro). Os times são configuráveis no `.env` (`MOVIDESK_AGENTES_SUPORTE`,
+  `MOVIDESK_AGENTES_DEV`).
+- **Macros**: confere se uma macro foi usada num ticket e cruza com os outros tickets
+  onde a mesma macro aparece.
+  - **Validar ticket**: digite o número do ticket; o painel lê as ações dele e mostra
+    quais macros do catálogo aparecem no texto (com quem escreveu e o trecho). Compara
+    o resultado com o **índice de ações** de outros tickets.
+  - **Buscar trecho**: procura um texto livre (ex.: "boleto não registrado") nas ações
+    de todos os tickets indexados — mostra ticket, autor, data e o trecho.
+  - **Indexar ações**: monta o índice varrendo as ações dos tickets em segundo plano
+    (1 req/ticket, respeitando o limite de 10 req/min; dá para **parar** a qualquer
+    momento). O índice é salvo em `cache/acoes_index.json`.
+  - Observação: a API do Movidesk não expõe o nome da macro usada, então a detecção é
+    feita por **casamento de texto** (ignora acento/maiúsculas).
 - **Satisfação**: permite escolher o intervalo de datas (a API aceita
   `responseDateGreaterThan`/`LessThan`). O padrão são os últimos 365 dias.
 - **Filtro por serviço** (topo): restringe as listas ao serviço selecionado.
@@ -70,7 +85,8 @@ parados, mescláveis, pendências, satisfação, plantão e histórico de contat
   com botão "Solução pronta" — acelera respostas que já foram dadas antes.
 - **Horários**: mapa de calor de abertura de tickets (dia da semana × hora), a partir do
   cache + histórico — ajuda a dimensionar a escala. Use junto com o Ranking da equipe.
-- **Plantão**: quem está de plantão hoje e os tickets novos do dia.
+- **Plantão**: quem está de plantão hoje e os tickets novos do dia. A ordem do
+  rodízio padrão é **Lucas → Jefferson** (configurável em `MOVIDESK_PLANTAO_ORDEM`).
 - **Contato** (📞): histórico de ligações/tentativas registradas no ticket.
 - **Agenda do dia**: mostra os tickets **resolvidos/encerrados desde o último dia
   útil até ontem**, pulando **sábados, domingos e feriados**. Consulte todo dia útil
