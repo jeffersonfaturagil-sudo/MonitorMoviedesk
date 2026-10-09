@@ -117,6 +117,12 @@ let histItens = null;
 let histQuery = "";
 let histMsg = "";
 let histAcoes = {};
+let histDesde = localStorage.getItem("histDesde") || "2021-05-01";
+let histAte = localStorage.getItem("histAte") || new Date().toISOString().slice(0, 10);
+let histJobTimer = null;
+let pesqDesde = localStorage.getItem("pesqDesde") || new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10);
+let pesqAte = localStorage.getItem("pesqAte") || new Date().toISOString().slice(0, 10);
+let pesqMsg = "";
 let plantao = null;
 let mergeEscopo = "atual";
 let mergeDados = null;
@@ -397,7 +403,7 @@ let modeloAgendaPadrao = "";
 function render() {
   if (dados && dados.agenda && !modeloAgendaPadrao) modeloAgendaPadrao = dados.agenda.texto;
 
-  if (aba === "duvidas") { $("painel").innerHTML = telaDuvidas(); return; }
+  if (aba === "duvidas") { $("painel").innerHTML = telaDuvidas(); atualizarStatusHist(); return; }
   if (aba === "plantao") {
     if (!plantao) {
       $("painel").innerHTML = `<div class="empty">Carregando plantão…</div>`;
@@ -483,7 +489,7 @@ function render() {
   else if (aba === "kanban") html = tabelaKanban(dados.pendencias && dados.pendencias.kanban, dados.pendencias);
   else if (aba === "atencao") html = tabelaTickets(filtrarServico(dados.atencao));
   else if (aba === "mesclas") html = tabelaMesclas(dados.mesclas);
-  else if (aba === "pesquisa") html = tabelaPesquisa(dados.pesquisa && dados.pesquisa.itens, dados.pesquisa && dados.pesquisa.resumo);
+  else if (aba === "pesquisa") html = telaPesquisa(dados.pesquisa && dados.pesquisa.itens, dados.pesquisa && dados.pesquisa.resumo, dados.pesquisa_periodo);
   else if (aba === "sla") html = tabelaSla(filtrarServico(dados.sla));
   else if (aba === "ok") html = tabelaTickets(filtrarServico(dados.ok));
   else if (aba === "ranking") html = telaRanking();
@@ -504,12 +510,21 @@ function render() {
 function telaDuvidas() {
   const web = ((dados && dados.movidesk_web) || "https://faturagil.movidesk.com").replace(/\/$/, "");
   const btn = "padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;cursor:pointer;background:#fff";
+  const inpHist = "padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px";
   let html = `<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px">
     <div style="font-weight:600;margin-bottom:6px">Perguntar ao histórico</div>
     <div class="muted" style="font-size:12px;margin-bottom:8px">Busca local nos tickets já resolvidos (sem IA). Ex.: "impressora não imprime", "nota fiscal rejeitada", "esqueci a senha".</div>
     <input id="buscaHist" value="${esc(histQuery)}" placeholder="Digite palavras-chave da dúvida…" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:min(460px,90%)">
     <button id="btnBuscarHist" style="${btn}">Buscar</button>
-    <button id="btnHistCompleto" style="${btn}">Indexar histórico completo (365 dias)</button>
+    <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+      <div class="muted" style="font-size:12px;margin-bottom:6px">Indexar histórico (rotas /tickets + /tickets/past, por intervalo de datas). Devido ao limite de 10 req/min, períodos longos demoram.</div>
+      <label class="muted" style="font-size:12px">De <input type="date" id="histDesde" value="${esc(histDesde)}" style="${inpHist}"></label>
+      <label class="muted" style="font-size:12px;margin-left:6px">Até <input type="date" id="histAte" value="${esc(histAte)}" style="${inpHist}"></label>
+      <button id="btnHistCompleto" style="${btn}">Indexar período</button>
+      <button id="btnHistTudo" style="${btn}" title="Período completo desde o início da conta (2021)">Tudo desde 2021</button>
+      <span class="muted" id="histCobertura" style="font-size:12px;margin-left:8px"></span>
+    </div>
+    <div id="histJob" style="margin-top:8px"></div>
     <div class="muted" id="histInfo" style="font-size:12px;margin-top:8px">${esc(histMsg)}</div>
   </div>`;
   if (histItens) {
@@ -608,18 +623,80 @@ async function verSolucao(id) {
   render();
 }
 
-async function indexarHistorico() {
-  histMsg = "Indexando todo o histórico (365 dias)… pode levar 1–2 min por causa do limite da API.";
+async function atualizarStatusHist() {
+  try {
+    const r = await fetch("/api/historico/status");
+    const j = await r.json();
+    const job = j.job || {};
+    const cob = j.cobertura || {};
+    const el = $("histJob"), info = $("histInfo"), cov = $("histCobertura");
+    if (cov) cov.textContent = cob.total ? `Índice: ${cob.total} tickets (${cob.min}–${cob.max})` : "Índice vazio";
+    if (job.ativo) {
+      if (el) el.innerHTML = `<div style="background:#eef6ff;border:1px solid #b9d8ff;border-radius:8px;padding:8px 12px">⏳ Indexando ${esc(job.janela || "")} — mês ${job.mes}/${job.meses} • ${job.processados || 0} tickets nesta execução${job.erros ? ` • ${job.erros} erro(s)` : ""}. Limite da API: 10 req/min.</div>`;
+      if (info) info.textContent = "";
+      if (!histJobTimer) histJobTimer = setInterval(atualizarStatusHist, 3000);
+    } else {
+      if (histJobTimer) { clearInterval(histJobTimer); histJobTimer = null; }
+      if (el) el.innerHTML = job.terminado_em
+        ? `<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:8px 12px">✅ Concluído: ${job.processados || 0} tickets no período (${esc(job.desde || "")} a ${esc(job.ate || "")})${job.erros ? ` • ${job.erros} erro(s)` : ""}.</div>`
+        : (job.erro ? `<div style="color:#a00">Erro: ${esc(job.erro)}</div>` : "");
+    }
+  } catch (e) { /* silencioso */ }
+}
+
+async function indexarHistorico(desde, ate) {
+  desde = desde || ($("histDesde") && $("histDesde").value) || histDesde;
+  ate = ate || ($("histAte") && $("histAte").value) || histAte;
+  histDesde = desde; histAte = ate;
+  localStorage.setItem("histDesde", desde);
+  localStorage.setItem("histAte", ate);
+  histMsg = "";
   render();
   try {
-    const r = await fetch("/api/historico/completo", { method: "POST" });
+    const r = await fetch(`/api/historico/completo?desde=${encodeURIComponent(desde)}&ate=${encodeURIComponent(ate)}`, { method: "POST" });
     const j = await r.json();
     if (j.erro) throw new Error(j.erro);
-    histMsg = `Histórico completo indexado: ${j.total} tickets resolvidos (salvo em ${j.salvo_em}).`;
+    atualizarStatusHist();
   } catch (e) {
     histMsg = "Erro ao indexar: " + e;
+    render();
   }
+}
+
+function telaPesquisa(itens, resumo, periodo) {
+  const btn = "padding:7px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;cursor:pointer;background:#fff";
+  const inp = "padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:13px";
+  const per = periodo && periodo.desde
+    ? `Período carregado: ${periodo.desde} a ${periodo.ate || "hoje"}`
+    : "Período padrão: últimos 365 dias";
+  const header = `<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px">
+    <div class="muted" style="font-size:12px;margin-bottom:6px">${esc(per)}. A API de pesquisa aceita intervalo de datas; a busca é paginada (pode levar alguns segundos).</div>
+    <label class="muted" style="font-size:12px">De <input type="date" id="pesqDesde" value="${esc(pesqDesde)}" style="${inp}"></label>
+    <label class="muted" style="font-size:12px;margin-left:6px">Até <input type="date" id="pesqAte" value="${esc(pesqAte)}" style="${inp}"></label>
+    <button id="btnPesquisaPeriodo" style="${btn}">Buscar período</button>
+    <span class="muted" id="pesqInfo" style="font-size:12px;margin-left:8px">${esc(pesqMsg)}</span>
+  </div>`;
+  return header + tabelaPesquisa(itens, resumo);
+}
+
+async function buscarPesquisaPeriodo() {
+  const desde = ($("pesqDesde") && $("pesqDesde").value) || pesqDesde;
+  const ate = ($("pesqAte") && $("pesqAte").value) || pesqAte;
+  pesqDesde = desde; pesqAte = ate;
+  localStorage.setItem("pesqDesde", desde);
+  localStorage.setItem("pesqAte", ate);
+  pesqMsg = "Buscando respostas no período…";
   render();
+  try {
+    const r = await fetch(`/api/pesquisa?desde=${encodeURIComponent(desde)}&ate=${encodeURIComponent(ate)}`, { method: "POST" });
+    const j = await r.json();
+    if (j.erro) throw new Error(j.erro);
+    pesqMsg = `${j.total} respostas no período ${j.desde} a ${j.ate || "hoje"}.`;
+    await carregarCache();
+  } catch (e) {
+    pesqMsg = "Erro: " + e;
+    render();
+  }
 }
 
 async function carregarRanking() {
@@ -938,6 +1015,8 @@ $("painel").addEventListener("click", async (e) => {
   }
   if (e.target.id === "btnBuscarHist") { await buscarHist(); return; }
   if (e.target.id === "btnHistCompleto") { await indexarHistorico(); return; }
+  if (e.target.id === "btnHistTudo") { await indexarHistorico("2021-05-01", new Date().toISOString().slice(0, 10)); return; }
+  if (e.target.id === "btnPesquisaPeriodo") { await buscarPesquisaPeriodo(); return; }
   if (e.target.id === "btnSalvarPlantao") {
     const ta = $("plantaoEscala");
     await salvarPlantao(textoParaEscala(ta ? ta.value : ""), ($("plantaoNota") || {}).value || "");
