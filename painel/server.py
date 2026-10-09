@@ -227,6 +227,18 @@ class Handler(BaseHTTPRequestHandler):
             from dados import buscar_historico
 
             self._json(buscar_historico(params.get("q") or ""))
+        elif path == "/api/mapa-horarios":
+            from dados import build_mapa_horarios
+
+            self._json(build_mapa_horarios())
+        elif path == "/api/parecidos":
+            from dados import build_parecidos
+
+            try:
+                tid = int(params.get("id") or "")
+            except (TypeError, ValueError):
+                tid = 0
+            self._json(build_parecidos(tid, (params.get("modo") or "parecidos").lower()))
         elif path == "/api/plantao":
             from dados import build_plantao
 
