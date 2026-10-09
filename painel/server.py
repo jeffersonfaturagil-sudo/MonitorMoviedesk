@@ -93,6 +93,90 @@ def is_running() -> bool:
         return False
 
 
+def _odata(dt: datetime) -> str:
+    tz = dt.astimezone().strftime("%z")
+    tz = f"{tz[:3]}:{tz[3:]}" if tz else "-03:00"
+    return f"{dt.strftime('%Y-%m-%dT%H:%M:%S')}{tz}"
+
+
+def _meses(desde: datetime, ate: datetime):
+    from datetime import timedelta
+
+    ini = desde.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    while ini < ate:
+        nxt = (ini.replace(day=28) + timedelta(days=4)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        yield ini, min(nxt, ate)
+        ini = nxt
+
+
+_historico_job: dict = {"ativo": False}
+_historico_lock = threading.Lock()
+_STATUS_HISTORICO = ("Resolved", "Closed", "Canceled")
+
+
+def _indexar_historico(desde: datetime, ate: datetime) -> None:
+    """Indexa, em background, todos os tickets resolvidos no intervalo [desde, ate),
+    consultando as rotas /tickets e /tickets/past mes a mes (chama o RateLimiter)."""
+    from dados import merge_historico
+
+    try:
+        from api_client import MovideskClient
+
+        client = MovideskClient()
+    except Exception as exc:
+        with _historico_lock:
+            _historico_job.update({"ativo": False, "erro": str(exc)})
+        log.exception("Falha ao iniciar indexacao")
+        return
+
+    janelas = list(_meses(desde, ate))
+    processados = 0
+    erros = 0
+    for i, (ini, fim) in enumerate(janelas, 1):
+        with _historico_lock:
+            if not _historico_job.get("ativo"):
+                log.info("Indexacao cancelada")
+                return
+            _historico_job.update({
+                "mes": i, "meses": len(janelas),
+                "janela": f"{ini.strftime('%m/%Y')}",
+                "processados": processados, "erros": erros,
+            })
+        try:
+            lote = client.list_tickets_range(
+                _odata(ini), _odata(fim), campo="resolvedIn", status=_STATUS_HISTORICO
+            )
+            total = merge_historico(lote)
+            processados += len(lote)
+            with _historico_lock:
+                _historico_job.update({"processados": processados, "no_indice": total})
+        except Exception as exc:
+            erros += 1
+            log.warning("Erro na janela %s: %s", ini.strftime("%m/%Y"), exc)
+
+    with _historico_lock:
+        _historico_job.update({
+            "ativo": False, "erro": None, "processados": processados,
+            "erros": erros, "terminado_em": datetime.now().isoformat(timespec="seconds"),
+        })
+    log.info("Indexacao concluida: %d tickets (%d erros)", processados, erros)
+
+
+def _iniciar_indexacao(desde: datetime, ate: datetime) -> dict:
+    with _historico_lock:
+        if _historico_job.get("ativo"):
+            return {"erro": "Ja existe uma indexacao em andamento."}
+        _historico_job.clear()
+        _historico_job.update({
+            "ativo": True, "erro": None, "desde": desde.strftime("%Y-%m-%d"),
+            "ate": ate.strftime("%Y-%m-%d"), "mes": 0, "meses": 0,
+            "processados": 0, "erros": 0, "no_indice": 0,
+            "iniciado_em": datetime.now().isoformat(timespec="seconds"),
+        })
+    threading.Thread(target=_indexar_historico, args=(desde, ate), daemon=True).start()
+    return {"ok": True, "desde": desde.strftime("%Y-%m-%d"), "ate": ate.strftime("%Y-%m-%d")}
+
+
 def open_browser() -> None:
     threading.Timer(1.0, lambda: webbrowser.open(server_url())).start()
 
@@ -165,6 +249,8 @@ class Handler(BaseHTTPRequestHandler):
             self._json(build_ranking())
         elif path == "/api/solucao":
             self._solucao(params.get("id") or "")
+        elif path == "/api/historico/status":
+            self._historico_status()
         elif path == "/api/dados":
             from dados import load_cache_payload
 
@@ -237,28 +323,61 @@ class Handler(BaseHTTPRequestHandler):
             log.exception("Falha ao montar solucao do ticket %s", ticket_id)
             self._json({"erro": str(exc)}, code=502)
 
-    def _historico_completo(self, dias: int = 365):
+    def _historico_completo(self, params: dict | None = None):
+        from datetime import timedelta
+
+        params = params or {}
+        desde_s = (params.get("desde") or "").strip()
+        ate_s = (params.get("ate") or "").strip()
+        try:
+            desde = datetime.fromisoformat(desde_s) if desde_s else datetime.now() - timedelta(days=365)
+            ate = (datetime.fromisoformat(ate_s) + timedelta(days=1)) if ate_s else datetime.now() + timedelta(days=1)
+        except ValueError:
+            self._json({"erro": "data invalida (use AAAA-MM-DD)"}, code=400)
+            return
+        if desde >= ate:
+            self._json({"erro": "a data inicial deve ser anterior a final"}, code=400)
+            return
+        self._json(_iniciar_indexacao(desde, ate))
+
+    def _historico_status(self):
+        from dados import historico_cobertura
+
+        with _historico_lock:
+            job = dict(_historico_job)
+        self._json({"job": job, "cobertura": historico_cobertura()})
+
+    def _pesquisa(self, params: dict):
         from datetime import timedelta
 
         from dados import load_cache_raw, save_cache_raw
 
+        desde_s = (params.get("desde") or "").strip()
+        ate_s = (params.get("ate") or "").strip()
+        try:
+            since_dt = datetime.fromisoformat(desde_s) if desde_s else datetime.now() - timedelta(days=365)
+            until_dt = (datetime.fromisoformat(ate_s) + timedelta(days=1)) if ate_s else None
+        except ValueError:
+            self._json({"erro": "data invalida (use AAAA-MM-DD)"}, code=400)
+            return
         try:
             from api_client import MovideskClient
 
-            now = datetime.now()
-            since = now - timedelta(days=dias)
-            tz = since.astimezone().strftime("%z")
-            tz = f"{tz[:3]}:{tz[3:]}" if tz else "-03:00"
-            since_odata = f"{since.strftime('%Y-%m-%dT00:00:00')}{tz}"
-            client = MovideskClient()
-            tickets = client.list_resolved_tickets_since(None, since_odata)
+            respostas = MovideskClient().list_survey_responses(
+                since_dt.strftime("%Y-%m-%dT00:00:00"),
+                until_dt.strftime("%Y-%m-%dT00:00:00") if until_dt else None,
+            )
             raw = load_cache_raw()
-            raw["historico"] = tickets
-            raw["historico_salvo_em"] = now.isoformat(timespec="seconds")
+            raw["survey"] = respostas
+            raw["survey_salvo_em"] = datetime.now().isoformat(timespec="seconds")
+            raw["survey_periodo"] = {
+                "desde": since_dt.strftime("%Y-%m-%d"),
+                "ate": (until_dt - timedelta(days=1)).strftime("%Y-%m-%d") if until_dt else "",
+            }
             save_cache_raw(raw)
-            self._json({"ok": True, "total": len(tickets), "salvo_em": raw["historico_salvo_em"]})
+            self._json({"ok": True, "total": len(respostas), **raw["survey_periodo"]})
         except Exception as exc:
-            log.exception("Falha ao carregar historico completo")
+            log.exception("Falha ao buscar pesquisa")
             self._json({"erro": str(exc)}, code=502)
 
     def _agentes(self):
@@ -284,7 +403,9 @@ class Handler(BaseHTTPRequestHandler):
             agente = (params.get("agente") or AGENT_EMAIL).lower()
             self._consultar(agente=agente, forcar="forcar" in params)
         elif path == "/api/historico/completo":
-            self._historico_completo()
+            self._historico_completo(params)
+        elif path == "/api/pesquisa":
+            self._pesquisa(params)
         elif path == "/api/plantao":
             self._salvar_plantao()
         elif path == "/api/mesclas":
