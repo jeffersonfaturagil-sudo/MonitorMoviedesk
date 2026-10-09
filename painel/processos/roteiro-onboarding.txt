@@ -1,0 +1,115 @@
+a Inicial *
+
+Roteiro de Onboarding para novo integrante no time Suporte
+
+Siga o fluxo a seguir, passo a passo, para se orientar sobre sua rotina diária, semanal e mensal: 
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# BOAS-VINDAS
+Videochamada junto com o time para apresentação do novo integrante do time
+Boas-vindas no canal #geral
+Boas-vindas no e-mail 
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# REDES SOCIAIS
+Redes sociais para você seguir, acompanhar e estudar sobre a FaturÁgil
+https://faturagil.com.br/ 
+http://faturagil.com.br/blog/ 
+https://www.linkedin.com/company/faturagil/ 
+https://www.instagram.com/faturagil_/ 
+https://www.facebook.com/faturagil.com.br 
+https://twitter.com/faturagil_ 
+https://www.youtube.com/@faturagil 
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ROTEIRO DE INTEGRAÇÃO E TREINAMENTO SUPORTE
+
+Roteiro de Integração e Treinamento SUPORTE - FaturÁgil.xlsx
+Obs: esse roteiro não está atualizado, será reestruturado.
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# COMUNICAÇÃO COM O TIME - DISCORD
+
+Discord - ferramenta de comunicação da equipe - FaturÁgil
+
+App: https://discord.com/channels/692855679127388220/692855679127388223 
+Login: nome@faturagil.com.br 
+Senha: ???
+PS: trocar a senha.
+ 
+Discord é um aplicativo de comunicação que permite que você converse por voz, vídeo e texto com a equipe.
+Essa ferramenta simula salas virtuais, como se a gente estivesse juntos presencialmente.
+ 
+A reunião diária/daily, é realizada via vídeo no canal #implantação-suporte.
+ 
+Os canais são grupos de conversas para que as nossas interações fiquem organizadas por assunto.
+ 
+Canais:
+#geral - comunicação geral, avisos, dicas para todo time, etc
+#agenda-compromissos - comunicados de ausência, reuniões, férias, etc
+#atualizações-do-sistema - novidades, atualizações e correções de bugs da plataforma FaturÁgil
+#playbook-ferramentas - compartilhamos materiais e playbooks vivos que ajudam a equipe na operação do dia a dia
+#artigos-material-apoio - dicas e manuais do sistema
+#daily-atendimento - relatório diário, o que fez ontem, o que fará hoje, impedimentos/dificuldades, agendamentos com cliente
+#suporte-implantação - conversa o dia todo, trocamos ideias do departamento, pedimos ajuda, sugerimos
+ 
+Além dos canais, você pode conversar individualmente com cada membro da equipe. 
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# SISTEMA FATURÁGIL
+
+https://app.faturagil.com.br/ 
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# BASE DE CONHECIMENTO
+
+https://atendimento.faturagil.com.br/kb/article/199704/ola-que-bom-te-ver-por-aqui
+https://docs.google.com/document/d/1HMmoLk49lHxP8BY0cwLjcAMDhMD1QaiLUtV4NY2xI88/ 
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# PLAYBOOKS
+
+Playbook de Suporte - FaturÁgilbr
+Playbook de Implantação - FaturÁgil
+Playbook da ferramenta Helpdesk/Suporte (Movidesk) - FaturÁgil
+Guia de treinamento para videochamada de implantação - FaturÁgil
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# PASTAS NO DRIVE
+
+Pasta do Suporte: Suporte Embradev FaturÁgil
+Pasta dos Clientes: Clientes implantação / treinamento
+Pasta de manuais: Manuais
+Pasta de NFS-e Tecnospeed: NFS-e - nota fiscal de serviço eletrônica - Tecnospeed
+Pasta da PJBank: PJBank - Boleto, Cartão e Conta Digital
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# SISTEMA DE SUPORTE / HELPDESK
+
+https://atendimento.faturagil.com.br/Ticket 
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# RELATÓRIO DIÁRIO ???
+
+- números
+- revisar tickets em atendimento
+- responder
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ABC:
+
+
+
+
+….
