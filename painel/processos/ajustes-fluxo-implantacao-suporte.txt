@@ -1,0 +1,7 @@
+Ajustes no fluxo de implantação e suporte
+
+
+AGENDAMENTO
+Adicionar ação com as sugestões de horário
+Ligar, se o cliente não responder em até 01h00.
+
