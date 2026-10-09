@@ -97,6 +97,7 @@
     <button class="tab" data-tab="sla">SLA <span class="cnt" id="cSla"></span></button>
     <button class="tab" data-tab="acoes">Ações sugeridas</button>
     <button class="tab" data-tab="duvidas">Dúvidas / Histórico</button>
+    <button class="tab" data-tab="horarios">Horários</button>
     <button class="tab" data-tab="ranking">Equipe / Ranking</button>
     <button class="tab" data-tab="ok">OK <span class="cnt" id="cOk"></span></button>
   </div>
@@ -131,6 +132,8 @@ let mergeMostrarConcluidas = false;
 let ranking = null;
 let servicos = null;
 let solucoes = {};
+let parecidos = {};
+let mapaHor = null;
 let servicoSel = localStorage.getItem("servicoSel") || "";
 
 function servicoRaiz(x) {
@@ -260,6 +263,7 @@ function tempoAtendenteTag(x) {
 
 function tabelaTickets(lista) {
   if (!lista.length) return `<div class="empty">Nenhum registro.</div>`;
+  const web = ((dados && dados.movidesk_web) || "https://faturagil.movidesk.com").replace(/\/$/, "");
   const linhas = lista.map(t => `
     <tr>
       <td>${linkTicket(t.id)}</td>
@@ -272,10 +276,54 @@ function tabelaTickets(lista) {
       <td>${etiquetaTag(t)}</td>
       <td>${ligacaoTag(t)}</td>
       <td>${pill(t.nivel)}</td>
-    </tr>`).join("");
+      <td>${sugestaoBotoes(t)}</td>
+    </tr>
+    ${parecidos[t.id] ? `<tr><td colspan="11" style="background:#fafafa;border-top:2px solid var(--border)">${renderParecidos(parecidos[t.id], web)}</td></tr>` : ""}`).join("");
   return `<table>
-    <thead><tr><th>Ticket</th><th>Cliente</th><th>Responsável</th><th>Assunto</th><th>Última ação</th><th>Parado há</th><th>Situação</th><th>Próximo passo</th><th>Contato</th><th>Classificação</th></tr></thead>
-    <tbody>${linhas}</tbody></table>`;
+    <thead><tr><th>Ticket</th><th>Cliente</th><th>Responsável</th><th>Assunto</th><th>Última ação</th><th>Parado há</th><th>Situação</th><th>Próximo passo</th><th>Contato</th><th>Classificação</th><th>Sugestão</th></tr></thead>
+    <tbody>${linhas}</tbody></table>
+    <p class="muted" style="margin-top:10px;font-size:12px">💡 Sugestão: busca tickets <b>resolvidos</b> parecidos (assunto/cliente/serviço) no índice do histórico local. "Mesmo assunto" filtra só assuntos idênticos.</p>`;
+}
+
+function sugestaoBotoes(t) {
+  const btn = "padding:3px 7px;border:1px solid var(--border);border-radius:6px;font-size:11.5px;cursor:pointer;background:#fff";
+  const aberto = parecidos[t.id] && !parecidos[t.id].carregando ? ";background:#eef6ff" : "";
+  return `<button class="btnParecidos" data-id="${t.id}" style="${btn}${aberto}">💡 Parecidos</button>
+    <br><button class="btnParecidosAssunto" data-id="${t.id}" style="${btn};margin-top:3px">Mesmo assunto</button>`;
+}
+
+async function verParecidos(id, modo) {
+  parecidos[id] = { carregando: true, modo: modo };
+  render();
+  try {
+    const r = await fetch(`/api/parecidos?id=${encodeURIComponent(id)}&modo=${encodeURIComponent(modo)}`);
+    const j = await r.json();
+    if (j.erro) throw new Error(j.erro);
+    parecidos[id] = j;
+  } catch (e) {
+    parecidos[id] = { erro: String(e.message || e) };
+  }
+  render();
+}
+
+function renderParecidos(p, web) {
+  if (p.carregando) return `<div class="muted" style="padding:8px">Buscando tickets resolvidos parecidos…</div>`;
+  if (p.erro) return `<div style="color:#a00;padding:8px">${esc(p.erro)}</div>`;
+  const itens = p.itens || [];
+  if (!itens.length) return `<div class="muted" style="padding:8px">Nenhum ticket resolvido parecido no índice local. Indexe o histórico (aba Dúvidas) para melhorar os resultados.</div>`;
+  const linhas = itens.map(i => `
+    <tr>
+      <td style="white-space:nowrap"><a href="${web}/Ticket/Edit/${i.ticket}" target="_blank" rel="noopener"><b>#${i.ticket}</b></a></td>
+      <td>${esc(i.assunto)}</td>
+      <td class="muted">${esc(i.cliente)}</td>
+      <td class="muted">${esc(i.resolvido_em || "—")}</td>
+      <td>${i.similaridade >= 0.6 ? `<span class="pill green">${i.similaridade}</span>` : `<span class="pill gray">${i.score}</span>`}</td>
+      <td><button class="btnSolucao" data-id="${i.ticket}" style="padding:3px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;background:${i.tem_solucao ? "#e8f5e9" : "#fff"}">Solução pronta</button></td>
+    </tr>
+    ${solucoes[i.ticket] ? `<tr><td colspan="6" style="background:#f0fdf4;border-bottom:1px solid var(--border)">${renderSolucao(solucoes[i.ticket], web)}</td></tr>` : ""}`).join("");
+  return `<div style="padding:8px">
+    <div class="muted" style="font-size:12px;margin-bottom:6px">${itens.length} resolvido(s) parecido(s) com <b>#${p.ticket}</b> — "${esc(p.assunto)}" (índice local: ${p.total_indice} tickets resolvidos).</div>
+    <table style="font-size:12.5px"><tbody>${linhas}</tbody></table></div>`;
 }
 
 function tabelaMesclas(lista) {
@@ -440,6 +488,15 @@ function render() {
       return;
     }
     $("painel").innerHTML = telaRanking();
+    return;
+  }
+  if (aba === "horarios") {
+    if (!mapaHor) {
+      $("painel").innerHTML = `<div class="empty">Carregando mapa de horários…</div>`;
+      carregarMapaHorarios();
+      return;
+    }
+    $("painel").innerHTML = telaHorarios();
     return;
   }
   if (aba === "mesclas") {
@@ -729,6 +786,44 @@ async function carregarRanking() {
     ranking = null;
   }
   render();
+}
+
+async function carregarMapaHorarios() {
+  try {
+    const r = await fetch("/api/mapa-horarios");
+    mapaHor = await r.json();
+    if (mapaHor.erro) { banner(mapaHor.erro, "err"); mapaHor = null; return; }
+  } catch (e) {
+    banner("Falha ao carregar horários: " + e, "err");
+    mapaHor = null;
+  }
+  render();
+}
+
+function corHeat(c, max) {
+  if (!c) return "background:#f8fafc;color:#cbd5e1";
+  const r = Math.max(0, Math.min(1, c / max));
+  const alpha = (0.08 + 0.9 * r).toFixed(3);
+  const cor = r > 0.62 ? "#fff" : "#1e293b";
+  return `background:rgba(37,99,235,${alpha});color:${cor}`;
+}
+
+function telaHorarios() {
+  const m = mapaHor || {};
+  if (!m.total) return `<div class="empty">Sem dados de horários. Clique em Consultar e/ou indexe o histórico (aba Dúvidas) — o mapa junta os tickets ativos + resolvidos do cache.</div>`;
+  const max = m.max || 1, maxH = m.max_por_hora || 1;
+  const celula = (v, mx) => `<td title="${v} ticket(s)" style="text-align:center;padding:6px 2px;font-size:11px;border:1px solid #fff;${corHeat(v, mx)}">${v || ""}</td>`;
+  const linhas = m.dias.map((d, i) => `<tr><th style="white-space:nowrap">${d}</th>${m.horas.map(h => celula(m.matriz[i][h], max)).join("")}<td class="muted" style="text-align:right;font-weight:700">${m.por_dia[i]}</td></tr>`).join("");
+  const rot = m.horas.map(h => `<td style="text-align:center;font-size:10px;color:var(--muted)">${h}</td>`).join("");
+  const soma = m.horas.map(h => `<td style="text-align:center;font-size:10px;border:1px solid #fff;${corHeat(m.por_hora[h], maxH)}">${m.por_hora[h]}</td>`).join("");
+  const cob = m.cobertura || {};
+  const pico = m.pico || {}, apice = m.apice_hora || {};
+  return `<div style="margin-bottom:10px;font-size:13px">
+    <span class="muted">Abertura de tickets por <b>dia da semana × hora</b> — período indexado: <b>${esc(cob.dias || 0)} dia(s)</b>${cob.de ? ` (${esc(cob.de)} a ${esc(cob.ate)})` : ""}. Total: <b>${m.total}</b> tickets.</span><br>
+    <span class="muted">Densidade: quanto mais escuro o quadrado, mais tickets abrem naquela hora. <b>Pico do dia:</b> ${esc(pico.dia_nome || "")} às <b>${pico.hora}:00</b> (${pico.n} ticket(s)). <b>Hora de maior volume:</b> <b>${apice.hora}:00</b> (${apice.n} ticket(s)).</span>
+  </div>
+  <table style="min-width:900px"><thead><tr><th></th>${rot}<th class="muted">Σ</th></tr></thead><tbody>${linhas}<tr><th>Todas</th>${soma}<th class="muted">${m.total}</th></tr></tbody></table>
+  <p class="muted" style="margin-top:10px;font-size:12px">Leitura: olhe a coluna "Todas" para saber as horas de maior volume (onde reforçar a escala) e as linhas para os dias que mais trazem abertura de tickets.</p>`;
 }
 
 function barraPct(pct) {
@@ -1054,6 +1149,10 @@ $("painel").addEventListener("click", async (e) => {
   if (btnM) { await marcarMescla(btnM.dataset.chave, btnM.dataset.status); return; }
   const btnVer = e.target.closest && e.target.closest(".btnVerAcoes");
   if (btnVer) { await verAcoes(btnVer.dataset.id); return; }
+  const btnPar = e.target.closest && e.target.closest(".btnParecidos");
+  if (btnPar) { await verParecidos(btnPar.dataset.id, "parecidos"); return; }
+  const btnParA = e.target.closest && e.target.closest(".btnParecidosAssunto");
+  if (btnParA) { await verParecidos(btnParA.dataset.id, "assunto"); return; }
   const btnSol = e.target.closest && e.target.closest(".btnSolucao");
   if (btnSol) { await verSolucao(btnSol.dataset.id); return; }
   const btnCop = e.target.closest && e.target.closest(".btnCopiarSol");
