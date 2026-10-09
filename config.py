@@ -44,6 +44,36 @@ def _load_token() -> str:
 AGENT_NAME = _cfg("MOVIDESK_AGENT_NAME", "Seu Nome Completo")
 AGENT_EMAIL = _cfg("MOVIDESK_AGENT_EMAIL", "").lower()
 
+
+def _lista_emails(valor: str) -> set[str]:
+    return {e.strip().lower() for e in valor.split(",") if e.strip()}
+
+
+# --- Times (Leandro migrou para dev: suporte = Jefferson + Lucas) ---
+AGENTES_SUPORTE = _lista_emails(
+    _cfg("MOVIDESK_AGENTES_SUPORTE", "jefferson@faturagil.com.br,lucas@faturagil.com.br")
+)
+AGENTES_DEV = _lista_emails(_cfg("MOVIDESK_AGENTES_DEV", "leandro@faturagil.com.br"))
+PLANTAO_ORDEM = [
+    e.strip().lower()
+    for e in _cfg(
+        "MOVIDESK_PLANTAO_ORDEM", "lucas@faturagil.com.br,jefferson@faturagil.com.br"
+    ).split(",")
+    if e.strip()
+]
+
+
+def papel_agente(email: str | None) -> str:
+    """Retorna 'suporte', 'dev' ou 'outros' conforme a configuracao de times."""
+    e = (email or "").strip().lower()
+    if not e:
+        return "outros"
+    if e in AGENTES_DEV:
+        return "dev"
+    if e in AGENTES_SUPORTE:
+        return "suporte"
+    return "outros"
+
 # --- Limiares ---
 CRITICAL_HOURS = 48
 WARNING_HOURS = 24
