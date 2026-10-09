@@ -752,6 +752,105 @@ def _all_active_entries() -> list[dict]:
     return list(entries.values())
 
 
+_DIAS_SEMANA = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
+
+
+def build_mapa_horarios() -> dict:
+    """Mapa de calor da abertura de tickets: dia da semana x hora.
+
+    Junta todos os tickets conhecidos no cache (ativos + resolvidos + historico).
+    """
+    from analyzer import parse_date
+
+    raw = load_cache_raw()
+    entradas: dict[int, dict] = {}
+    for t in raw.get("historico") or []:
+        if isinstance(t, dict) and t.get("id"):
+            entradas[int(t["id"])] = t
+    por_agente = raw.get("por_agente")
+    if isinstance(por_agente, dict):
+        for bucket in por_agente.values():
+            if not isinstance(bucket, dict):
+                continue
+            for chave in ("ativos", "resolvidos"):
+                for t in bucket.get(chave) or []:
+                    if isinstance(t, dict) and t.get("id"):
+                        entradas.setdefault(int(t["id"]), t)
+
+    matriz = [[0] * 24 for _ in range(7)]
+    datas: set[str] = set()
+    for t in entradas.values():
+        dt = parse_date(t.get("createdDate"))
+        if not dt:
+            continue
+        matriz[dt.weekday()][dt.hour] += 1
+        datas.add(dt.strftime("%Y-%m-%d"))
+
+    por_hora = [sum(matriz[d][h] for d in range(7)) for h in range(24)]
+    por_dia = [sum(row) for row in matriz]
+    max_celula = max((max(row) for row in matriz), default=0)
+    pico_dia = max(range(7), key=lambda d: por_dia[d]) if max_celula else 0
+    pico_hora = max(range(24), key=lambda h: por_hora[h]) if max_celula else 0
+
+    return {
+        "matriz": matriz,
+        "dias": _DIAS_SEMANA,
+        "horas": list(range(24)),
+        "total": sum(por_dia),
+        "max": max_celula,
+        "max_por_hora": max(por_hora) if max_celula else 0,
+        "por_hora": por_hora,
+        "por_dia": por_dia,
+        "pico": {"dia": pico_dia, "dia_nome": _DIAS_SEMANA[pico_dia], "hora": pico_hora, "n": matriz[pico_dia][pico_hora]},
+        "apice_hora": {"hora": pico_hora, "n": por_hora[pico_hora], "dia_nome": _DIAS_SEMANA[pico_dia]},
+        "cobertura": {
+            "de": min(datas) if datas else "",
+            "ate": max(datas) if datas else "",
+            "dias": len(datas),
+        },
+    }
+
+
+def build_parecidos(tid: int, modo: str = "parecidos") -> dict:
+    """Tickets resolvidos parecidos (ou de mesmo assunto) a um ticket aberto."""
+    alvo = None
+    for t in _all_active_entries() + _historico_entries():
+        if int(t.get("id") or 0) == tid:
+            alvo = t
+            break
+    if alvo is None:
+        return {"erro": f"ticket {tid} não encontrado no cache"}
+    assunto = alvo.get("subject") or ""
+    q = " ".join(
+        filter(
+            None,
+            [
+                assunto,
+                _client_name(alvo),
+                alvo.get("serviceFirstLevel") or "",
+                alvo.get("serviceSecondLevel") or "",
+            ],
+        )
+    )
+    res = buscar_historico(q, limite=15)
+    itens = [i for i in res["itens"] if i["ticket"] != tid]
+    if modo == "assunto":
+        chave = " ".join(_tokens(assunto))
+        itens = (
+            [i for i in itens if " ".join(_tokens(i.get("assunto") or "")) == chave]
+            if chave
+            else []
+        )
+    return {
+        "ticket": tid,
+        "assunto": assunto,
+        "modo": modo,
+        "itens": itens,
+        "total_indice": res["total_indice"],
+        "termos": res["termos"],
+    }
+
+
 def build_plantao(hoje_iso: str | None = None) -> dict:
     from datetime import date
 
