@@ -4370,53 +4370,40 @@ if (abaHash && document.querySelector('.tab[data-tab="' + abaHash + '"]')) {
   carregarProcessos();
 })();
 
-</script>
 
-<button id="chatbotFloatBtn" aria-label="Abrir assistente IA" title="Assistente IA" style="position:fixed;bottom:20px;right:20px;width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#2563eb,#1e40af);color:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;cursor:pointer;box-shadow:0 6px 16px rgba(37,99,235,.4);z-index:9998;border:none;transition:transform .15s" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">💬</button>
-<div style="position:fixed;bottom:6px;left:10px;font-size:11px;color:#9ca3af;z-index:9997">Desenvolvido por Jefferson Teles</div>
-<div id="chatbotFloatModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;padding:20px">
-  <div style="background:#fff;border-radius:10px;max-width:700px;margin:40px auto;padding:16px;max-height:85vh;overflow:auto;position:relative">
-    <button onclick="document.getElementById('chatbotFloatModal').style.display='none'" style="position:absolute;top:8px;right:12px;border:none;background:none;font-size:20px;cursor:pointer">×</button>
-    <div style="font-weight:600;margin-bottom:8px">Assistente IA</div>
-    <textarea id="cfTexto" rows="4" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px" placeholder="Cole o erro ou chat..."></textarea>
-    <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-      <input type="file" id="cfArquivo" accept=".pdf,image/*" style="font-size:12px">
-      <input id="cfCaminho" placeholder="Caminho do PDF (opcional)" style="flex:1;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px">
-      <input id="cfTicket" placeholder="Ticket #" style="width:80px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px">
-    </div>
-    <div style="margin-top:8px"><button id="cfEnviar" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;cursor:pointer;background:#fff">Enviar</button></div>
-    <div id="cfResp" style="margin-top:10px;font-size:13px;white-space:pre-wrap"></div>
-  </div>
-</div>
-<script>
-document.getElementById("chatbotFloatBtn").addEventListener("click", () => {
-  document.getElementById("chatbotFloatModal").style.display = "block";
-});
-document.getElementById("cfEnviar").addEventListener("click", async () => {
-  const txt = (document.getElementById("cfTexto") || {}).value || "";
-  const caminho = (document.getElementById("cfCaminho") || {}).value || "";
-  const ticket = (document.getElementById("cfTicket") || {}).value || "";
-  const file = (document.getElementById("cfArquivo") || {}).files[0];
-  const resp = document.getElementById("cfResp");
-  if (resp) resp.textContent = "Consultando IA...";
-  let payload = { texto: txt, ticket_id: ticket || null };
-  if (caminho) payload.caminho_pdf = caminho;
-  if (file) {
-    const b64 = await new Promise((res, rej) => {
-      const r = new FileReader();
-      r.onload = () => res(r.result.split(",")[1]);
-      r.onerror = rej;
-      r.readAsDataURL(file);
-    });
-    payload.arquivo_base64 = b64;
-    payload.arquivo_nome = file.name;
-  }
-  try {
-    const r = await fetch("/api/ia", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-    const j = await r.json();
-    if (j.erro) throw new Error(j.erro);
-    if (resp) resp.textContent = j.resposta || "(sem resposta)";
-  } catch (e) {
-    if (resp) resp.textContent = "Erro: " + (e.message || e);
-  }
+document.addEventListener("DOMContentLoaded", function() {
+  var btn = document.getElementById("chatbotFloatBtn");
+  if (btn) btn.addEventListener("click", function() {
+    var m = document.getElementById("chatbotFloatModal");
+    if (m) m.style.display = "block";
+  });
+  var enviar = document.getElementById("cfEnviar");
+  if (enviar) enviar.addEventListener("click", async function() {
+    var txt = (document.getElementById("cfTexto") || {}).value || "";
+    var caminho = (document.getElementById("cfCaminho") || {}).value || "";
+    var ticket = (document.getElementById("cfTicket") || {}).value || "";
+    var file = (document.getElementById("cfArquivo") || {}).files[0];
+    var resp = document.getElementById("cfResp");
+    if (resp) resp.textContent = "Consultando IA...";
+    var payload = { texto: txt, ticket_id: ticket || null };
+    if (caminho) payload.caminho_pdf = caminho;
+    if (file) {
+      var b64 = await new Promise(function(res, rej) {
+        var r = new FileReader();
+        r.onload = function() { res(r.result.split(",")[1]); };
+        r.onerror = rej;
+        r.readAsDataURL(file);
+      });
+      payload.arquivo_base64 = b64;
+      payload.arquivo_nome = file.name;
+    }
+    try {
+      var r = await fetch("/api/ia", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      var j = await r.json();
+      if (j.erro) throw new Error(j.erro);
+      if (resp) resp.textContent = j.resposta || "(sem resposta)";
+    } catch (e) {
+      if (resp) resp.textContent = "Erro: " + (e.message || e);
+    }
+  });
 });
