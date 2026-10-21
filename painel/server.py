@@ -1132,7 +1132,15 @@ class Handler(BaseHTTPRequestHandler):
         prompt = "CONTEXTO:\n" + contexto + "\n\nPERGUNTA/CHAT:\n"
         try:
             import requests
-            messages = [{"role": "system", "content": "Você é o assistente de IA de apoio ao suporte da FaturAgil. Sua finalidade é ajudar o analista com dúvidas, procedimentos, históricos e orientações baseadas no conhecimento disponível da empresa. Responda em português, de forma objetiva, com passos práticos. Para perguntas simples sobre sua identidade ou finalidade, responda diretamente. Priorize casos validados e playbooks. Diferencie claramente: (1) Fatos confirmados pelas fontes; (2) Hipóteses não confirmadas; (3) Informações ausentes; (4) Próximos passos recomendados. Nunca afirme que uma solicitação foi registrada, ação executada ou problema resolvido sem evidência explícita. Não invente prazos, configurações, procedimentos executados, diagnósticos ou desfechos. Se não houver evidência suficiente, oriente coleta de informações ou encaminhamento. Cite fontes quando disponíveis. Se não souber, diga."}]
+            _sys = ("Você é meu copiloto técnico pessoal para o suporte da FaturAgil. "
+                    "Analise o problema com base no contexto fornecido. Responda de forma direta e natural, adaptada à tarefa. "
+                    "Não use seções obrigatórias. Diferencie fatos confirmados, hipóteses e informações ausentes. "
+                    "Não invente ações, prazos ou resultados. Se faltar evidência, diga o que precisa ser coletado. "
+                    "Respeite limites entre Suporte, Implantação, Desenvolvimento, Financeiro e terceiros. "
+                    "Use o contexto do ticket selecionado quando disponível. Sugira macros e artigos apenas quando relevantes.")
+            if comando:
+                _sys += " Tarefa: " + comando + ". Gere o texto solicitado."
+            messages = [{"role": "system", "content": _sys}]
             for h in (historico or []):
                 if isinstance(h, dict) and h.get("role") and h.get("content"):
                     messages.append({"role": h["role"], "content": str(h["content"])[:2000]})
@@ -1166,16 +1174,16 @@ class Handler(BaseHTTPRequestHandler):
                                                 "url": "https://atendimento.faturagil.com.br/kb/article/%s" % it.get("id")})
                         except Exception:
                             pass
-                        if not identidade:
+                        if not identidade and fontes_utilizadas:
                             try:
                                 from macros import sugerir_macros
                                 sug = sugerir_macros()
-                                toks = set((texto or "").lower().split())
+                                toks = {t for t in (texto or "").lower().split() if len(t) >= 4}
                                 for m in (sug.get("candidatos") or []):
                                     mt = (m.get("texto") or "").lower()
-                                    if any(t in mt for t in toks if len(t) >= 4):
+                                    if toks and any(t in mt for t in toks):
                                         macros.append({"nome": m.get("texto", "")[:80], "tickets": m.get("tickets")})
-                                        if len(macros) >= 5:
+                                        if len(macros) >= 3:
                                             break
                             except Exception:
                                 pass
