@@ -1164,10 +1164,50 @@ class Handler(BaseHTTPRequestHandler):
         body = self._read_body()
         texto = (body.get("texto") or "").strip()
         nota = body.get("nota")
+        # valida nota
+        try:
+            nota = int(nota)
+        except (TypeError, ValueError):
+            nota = None
+        if nota not in (1, -1, None):
+            nota = None
         if not texto:
             self._json({"erro": "informe texto"}, code=400)
             return
-        import hashlib, json, os
+        motivo = (body.get("motivo") or "").strip() or None
+        motivos_validos = {
+            "informacao_incorreta", "generica", "sem_evidencia",
+            "procedimento_incorreto", "desatualizada", "busca_inadequada", "outro",
+        }
+        if motivo is not None and motivo not in motivos_validos:
+            motivo = "outro"
+        resposta_corrigida = (body.get("resposta_corrigida") or "").strip() or None
+        if resposta_corrigida is not None and len(resposta_corrigida) > 4000:
+            resposta_corrigida = resposta_corrigida[:4000]
+        # fontes/contexto: usa enviados ou recomputa
+        contexto = (body.get("contexto") or "").strip() or None
+        fontes = body.get("fontes")
+        if not isinstance(fontes, dict):
+            fontes = None
+        if contexto is None or fontes is None:
+            # recomputa (custo baixo)
+            try:
+                import processos
+                ctx = ""
+                docs, _, _ = processos.buscar(texto[:500])
+                for d in (docs or [])[:3]:
+                    for sec in (d.get("secoes") or [])[:2]:
+                        ctx += "\n## " + (sec.get("titulo") or "") + "\n" + (sec.get("texto") or "")[:800] + "\n"
+                from dados import buscar_historico
+                hist = buscar_historico(texto, limite=5)
+                for it in (hist.get("itens") or [])[:5]:
+                    ctx += "\n- Ticket #%s: %s" % (it.get("ticket"), (it.get("assunto") or "")[:120])
+                contexto = ctx[:4000] if contexto is None else contexto
+            except Exception:
+                contexto = contexto or ""
+            if fontes is None:
+                fontes = {}
+        import json
         from pathlib import Path
         p = Path(__file__).resolve().parent.parent / "cache" / "ia_feedback.json"
         p.parent.mkdir(parents=True, exist_ok=True)
@@ -1177,10 +1217,25 @@ class Handler(BaseHTTPRequestHandler):
             dados = []
         if not isinstance(dados, list):
             dados = []
-        dados.append({"texto": texto[:500], "nota": nota, "ts": __import__("datetime").datetime.now().isoformat(timespec="seconds")})
+        from datetime import datetime
+        registro = {
+            "texto": texto[:1000],
+            "nota": nota,
+            "motivo": motivo,
+            "resposta_corrigida": resposta_corrigida,
+            "contexto": contexto,
+            "fontes": fontes,
+            "ts": datetime.now().isoformat(timespec="seconds"),
+        }
+        # preserva campos antigos (nota/texto/ts) - ja presentes
+        dados.append(registro)
         # limita a 500
         dados = dados[-500:]
-        p.write_text(json.dumps(dados, ensure_ascii=False), encoding="utf-8")
+        try:
+            p.write_text(json.dumps(dados, ensure_ascii=False), encoding="utf-8")
+        except Exception as exc:
+            self._json({"erro": "falha ao gravar: %s" % exc}, code=500)
+            return
         self._json({"ok": True})
 
     def _read_body(self) -> dict:

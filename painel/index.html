@@ -1259,6 +1259,17 @@ async function avaliarIa(texto, nota) {
     toast(nota > 0 ? "Obrigado pelo feedback!" : "Feedback registrado.", "ok");
   } catch (e) {}
 }
+async function avaliarIaNegativo(texto) {
+  const motivos = ["informacao_incorreta","generica","sem_evidencia","procedimento_incorreto","desatualizada","busca_inadequada","outro"];
+  const motivo = prompt("Motivo (informacao_incorreta, generica, sem_evidencia, procedimento_incorreto, desatualizada, busca_inadequada, outro):", "outro");
+  if (motivo === null) return;
+  const m = motivos.includes(motivo) ? motivo : "outro";
+  const corrigida = prompt("Resposta corrigida (opcional):", "");
+  try {
+    await fetch("/api/ia/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto: texto, nota: -1, motivo: m, resposta_corrigida: corrigida || null }) });
+    toast("Feedback registrado.", "ok");
+  } catch (e) {}
+}
 
 function render() {
   if (dados && dados.agenda && !modeloAgendaPadrao) modeloAgendaPadrao = dados.agenda.texto;
@@ -4174,7 +4185,7 @@ $("painel").addEventListener("click", async (e) => {
       iaHistorico.push({ role: "assistant", content: j.resposta || "" });
       let extra = "";
       if (j.intencao) extra += `<div style="margin-top:4px;font-size:12px">🎯 Intenção: <b>${esc(j.intencao)}</b></div>`;
-      const fb = `<div style="margin-top:4px;font-size:12px">Útil? <button onclick="avaliarIa(${JSON.stringify(txt).replace(/</g,'\\\\u003c')},1)" style="border:none;background:none;cursor:pointer">👍</button> <button onclick="avaliarIa(${JSON.stringify(txt).replace(/</g,'\\\\u003c')},-1)" style="border:none;background:none;cursor:pointer">👎</button>${j.cache ? " (cache)" : ""}</div>`;
+      const fb = `<div style="margin-top:4px;font-size:12px">Útil? <button onclick="avaliarIa(${JSON.stringify(txt).replace(/</g,'\\\\u003c')},1)" style="border:none;background:none;cursor:pointer">👍</button> <button onclick="avaliarIaNegativo(${JSON.stringify(txt).replace(/</g,'\\\\u003c')})" style="border:none;background:none;cursor:pointer">👎</button>${j.cache ? " (cache)" : ""}</div>`;
       extra += fb;
       if (j.artigos && j.artigos.length) {
         extra += `<div style="margin-top:4px;font-size:12px">📚 Artigos: ${j.artigos.map(a => `<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.title)}</a>`).join(", ")}</div>`;
