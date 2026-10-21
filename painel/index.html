@@ -148,6 +148,7 @@ let macroBusca = null;
 let macroBuscaQ = "";
 let iaHistorico = [];
 let iaUltima = {};
+let iaTicketFoco = null;
 let macroFiltro = "";
 let macroQ = "";
 let macroSug = null;
@@ -1509,6 +1510,16 @@ function telaDuvidas() {
     <div style="font-weight:600;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">Assistente IA (OpenRouter) <span id="iaCota" class="muted" style="font-size:11px"></span></div>
     <div class="muted" style="font-size:12px;margin-bottom:8px">Cole o chat/erro. A IA responde com base nos playbooks e tickets similares (contexto limitado). Dicas: inclua o erro exato, serviço (NFS-e, boleto) e cliente. Ela busca em processos locais, histórico de tickets e artigos KB. Você pode rebater a resposta.</div>
     <div id="iaChat" style="max-height:300px;overflow:auto;margin-bottom:8px"></div>
+    <div style="margin-bottom:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      <label class="muted" style="font-size:12px">Ticket em foco: <input id="iaTicket" placeholder="#" style="width:80px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px"></label>
+      <select id="iaComando" style="padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px">
+        <option value="">Pergunta livre</option>
+        <option value="resumo de atendimento">Resumo de atendimento</option>
+        <option value="nota interna">Nota interna</option>
+        <option value="mensagem publica">Mensagem pública</option>
+        <option value="encaminhamento para Desenvolvimento">Encaminhamento para Dev</option>
+      </select>
+    </div>
     <textarea id="iaTexto" rows="4" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px" placeholder="Cole aqui o erro ou chat..."></textarea>
     <div style="margin-top:8px;display:flex;gap:6px">
       <button id="btnIa" style="${btn}">Perguntar à IA</button>
@@ -4174,13 +4185,15 @@ $("painel").addEventListener("click", async (e) => {
   if (e.target.id === "btnChecklistBuscar") { await carregarChecklist((($("checklistQ") || {}).value || "")); return; }
   if (e.target.id === "btnIa") {
     const txt = ($("iaTexto") || {}).value || "";
-    if (!txt.trim()) return;
+    const ticketId = ($("iaTicket") || {}).value || "";
+    const comando = ($("iaComando") || {}).value || "";
+    if (!txt.trim() && !ticketId) return;
     const chat = $("iaChat");
     iaHistorico.push({ role: "user", content: txt });
-    if (chat) chat.innerHTML += `<div style="margin-bottom:6px"><b>Você:</b> ${esc(txt)}</div>`;
+    if (chat) chat.innerHTML += `<div style="margin-bottom:6px"><b>Você:</b> ${esc(txt || "(ticket "+ticketId+")")}</div>`;
     if ($("iaTexto")) $("iaTexto").value = "";
     try {
-      const r = await fetch("/api/ia", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto: txt, historico: iaHistorico.slice(0,-1) }) });
+      const r = await fetch("/api/ia", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto: txt, historico: iaHistorico.slice(0,-1), ticket_id: ticketId || null, comando: comando || null }) });
       const j = await r.json();
       if (j.erro) throw new Error(j.erro);
       iaHistorico.push({ role: "assistant", content: j.resposta || "" });

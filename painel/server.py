@@ -1014,7 +1014,9 @@ class Handler(BaseHTTPRequestHandler):
         body = self._read_body()
         texto = (body.get("texto") or "").strip()
         historico = body.get("historico") or []
-        if not texto:
+        ticket_id = body.get("ticket_id")
+        comando = (body.get("comando") or "").strip()
+        if not texto and not ticket_id:
             self._json({"erro": "informe texto"}, code=400)
             return
         if not OPENROUTER_API_KEY:
@@ -1045,6 +1047,25 @@ class Handler(BaseHTTPRequestHandler):
             "com base em que", "para que serve", "qual sua funcao", "qual sua função",
             "voce e da", "você é da",
         ))
+        # Contexto do ticket selecionado (se houver)
+        contexto_ticket = ""
+        if ticket_id:
+            try:
+                tid = int(ticket_id)
+                from dados import ticket_por_id
+                t = ticket_por_id(tid)
+                if t:
+                    contexto_ticket = ("\n## TICKET EM FOCO #%d\nAssunto: %s\nServico: %s\nStatus: %s\nJustificativa: %s\nOwner: %s\n" % (
+                        tid,
+                        (t.get("subject") or "")[:200],
+                        " / ".join(filter(None, [t.get("serviceFirstLevel"), t.get("serviceSecondLevel")])),
+                        (t.get("status") or ""),
+                        (t.get("justification") or "")[:300],
+                        ((t.get("owner") or {}).get("businessName") or (t.get("owner") or {}).get("email") or ""),
+                    ))
+            except Exception:
+                pass
+
         # Contexto limitado: processos relevantes + tickets similares + artigos
         contexto = ""
         if identidade:
@@ -1053,6 +1074,8 @@ class Handler(BaseHTTPRequestHandler):
                         "Sua finalidade é ajudar o analista com dúvidas, procedimentos, "
                         "históricos e orientações baseadas no conhecimento disponível da empresa. "
                         "Responda diretamente, sem buscar tickets ou macros.\n")
+        if contexto_ticket:
+            contexto = (contexto or "") + contexto_ticket
         # Casos de referencia validados (prioridade)
         try:
             if identidade:
@@ -1103,6 +1126,8 @@ class Handler(BaseHTTPRequestHandler):
                 contexto += "\n- Ticket #%s: %s (%s)" % (it.get("ticket"), (it.get("assunto") or "")[:120], (it.get("resolvido_em") or ""))
         except Exception:
             pass
+        if contexto_ticket and contexto_ticket not in (contexto or ""):
+            contexto = (contexto or "") + contexto_ticket
         contexto = contexto[:4000]
         prompt = "CONTEXTO:\n" + contexto + "\n\nPERGUNTA/CHAT:\n"
         try:
