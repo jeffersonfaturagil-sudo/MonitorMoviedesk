@@ -463,7 +463,12 @@ class Handler(BaseHTTPRequestHandler):
         if not str(alvo).startswith(str(base)) or not alvo.is_file():
             self._send(404, b"nao encontrado", "text/plain; charset=utf-8")
             return
-        ctype = "text/css; charset=utf-8" if alvo.suffix == ".css" else "application/octet-stream"
+        if alvo.suffix == ".css":
+            ctype = "text/css; charset=utf-8"
+        elif alvo.suffix == ".js":
+            ctype = "application/javascript; charset=utf-8"
+        else:
+            ctype = "application/octet-stream"
         self._send(200, alvo.read_bytes(), ctype)
 
     def _health(self, params: dict):
