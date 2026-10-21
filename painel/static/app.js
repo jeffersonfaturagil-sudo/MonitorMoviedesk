@@ -4409,3 +4409,13 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   });
 });
+
+
+// Ctrl+Enter envia na aba Duvidas
+document.addEventListener("keydown", (e) => {
+  if (e.target && e.target.id === "iaTexto" && e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    const b = document.getElementById("btnIa");
+    if (b) b.click();
+  }
+});
