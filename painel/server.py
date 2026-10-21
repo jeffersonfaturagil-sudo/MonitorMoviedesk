@@ -436,6 +436,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/agenda": self._agenda_rota,
             "/api/artigos": self._artigos_get,
             "/api/ia/cota": self._ia_cota,
+            "/api/busca-semantica": self._busca_semantica,
             "/api/ia/feedback/stats": self._ia_feedback_stats,
             "/api/ia/casos": self._ia_casos_get,
             "/api/ticket-html": self._ticket_html,
@@ -1478,6 +1479,69 @@ class Handler(BaseHTTPRequestHandler):
         motivos = Counter(d.get("motivo") for d in dados if d.get("motivo"))
         self._json({"total": len(dados), "positivos": pos, "negativos": neg,
                     "motivos": dict(motivos)})
+
+    def _busca_semantica(self, params: dict):
+        q = (params.get("q") or "").strip()
+        if not q:
+            self._json({"erro": "informe q"}, code=400)
+            return
+        try:
+            import math, re
+            from dados import buscar_historico
+            hist = buscar_historico(q, limite=50)
+            docs = []
+            for it in (hist.get("itens") or []):
+                docs.append({"tipo": "ticket", "id": it.get("ticket"),
+                             "texto": " ".join([it.get("assunto") or "", it.get("cliente") or "", it.get("servico") or ""])})
+            # artigos KB
+            try:
+                from api_client import MovideskClient
+                res = MovideskClient().search_articles(q, page_size=10)
+                for a in (res.get("itens") or []):
+                    docs.append({"tipo": "artigo", "id": a.get("id"),
+                                 "texto": " ".join([a.get("title") or ""] + [c.get("name","") for c in (a.get("category") or [])])})
+            except Exception:
+                pass
+
+            def toks(t):
+                return [w for w in re.findall(r"[a-z0-9]{3,}", (t or "").lower())]
+
+            # IDF
+            N = len(docs) + 1
+            df = {}
+            for d in docs:
+                for w in set(toks(d["texto"])):
+                    df[w] = df.get(w, 0) + 1
+            idf = {w: math.log((N+1)/(df.get(w,0)+1)) + 1 for w in df}
+
+            def vec(text):
+                v = {}
+                for w in toks(text):
+                    v[w] = v.get(w, 0) + 1
+                # tf-idf
+                for w in list(v.keys()):
+                    v[w] = v[w] * idf.get(w, 1.0)
+                return v
+
+            def cos(a, b):
+                dot = sum(a.get(w,0)*b.get(w,0) for w in set(a)|set(b))
+                na = math.sqrt(sum(x*x for x in a.values()))
+                nb = math.sqrt(sum(x*x for x in b.values()))
+                if na == 0 or nb == 0:
+                    return 0.0
+                return dot/(na*nb)
+
+            qv = vec(q)
+            scored = []
+            for d in docs:
+                dv = vec(d["texto"])
+                sc = cos(qv, dv)
+                if sc > 0.05:
+                    scored.append({"tipo": d["tipo"], "id": d["id"], "score": round(sc, 3), "texto": d["texto"][:120]})
+            scored.sort(key=lambda x: -x["score"])
+            self._json({"q": q, "total": len(scored), "itens": scored[:15]})
+        except Exception as exc:
+            self._json({"erro": str(exc)}, code=502)
 
     def _read_body(self) -> dict:
         try:
