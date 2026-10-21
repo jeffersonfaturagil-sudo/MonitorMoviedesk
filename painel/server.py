@@ -1017,7 +1017,10 @@ class Handler(BaseHTTPRequestHandler):
         historico = body.get("historico") or []
         ticket_id = body.get("ticket_id")
         comando = (body.get("comando") or "").strip()
-        if not texto and not ticket_id:
+        arquivo_base64 = body.get("arquivo_base64")
+        arquivo_nome = (body.get("arquivo_nome") or "").strip()
+        caminho_pdf = (body.get("caminho_pdf") or "").strip()
+        if not texto and not ticket_id and not arquivo_base64 and not caminho_pdf:
             self._json({"erro": "informe texto"}, code=400)
             return
         if not OPENROUTER_API_KEY:
@@ -1127,6 +1130,33 @@ class Handler(BaseHTTPRequestHandler):
                 contexto += "\n- Ticket #%s: %s (%s)" % (it.get("ticket"), (it.get("assunto") or "")[:120], (it.get("resolvido_em") or ""))
         except Exception:
             pass
+        # Anexo PDF/imagem
+        anexo_texto = ""
+        try:
+            import base64, os, subprocess, tempfile
+            if caminho_pdf:
+                if os.path.isfile(caminho_pdf) and caminho_pdf.lower().endswith(".pdf"):
+                    out = subprocess.run(["pdftotext", "-layout", caminho_pdf, "-"], capture_output=True, text=True, timeout=60)
+                    if out.returncode == 0:
+                        anexo_texto = (out.stdout or "")[:6000]
+            elif arquivo_base64 and arquivo_nome.lower().endswith(".pdf"):
+                raw = base64.b64decode(arquivo_base64)
+                fd, tmp = tempfile.mkstemp(suffix=".pdf")
+                os.write(fd, raw); os.close(fd)
+                out = subprocess.run(["pdftotext", "-layout", tmp, "-"], capture_output=True, text=True, timeout=60)
+                if out.returncode == 0:
+                    anexo_texto = (out.stdout or "")[:6000]
+                try:
+                    os.remove(tmp)
+                except Exception:
+                    pass
+            elif arquivo_base64 and arquivo_nome:
+                anexo_texto = "[Imagem anexada: %s (base64, %d bytes)]" % (arquivo_nome, len(arquivo_base64))
+        except Exception:
+            anexo_texto = ""
+        if anexo_texto:
+            contexto = (contexto or "") + "\n## ANEXO\n" + anexo_texto[:6000] + "\n"
+
         if contexto_ticket and contexto_ticket not in (contexto or ""):
             contexto = (contexto or "") + contexto_ticket
         contexto = contexto[:4000]
