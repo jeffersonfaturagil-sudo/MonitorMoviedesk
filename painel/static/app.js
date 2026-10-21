@@ -1464,11 +1464,11 @@ function telaDuvidas() {
     <textarea id="iaTexto" rows="4" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px" placeholder="Cole aqui o erro ou chat..."></textarea>
     <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
       <button id="btnIa" style="${btn}">Perguntar à IA</button>
-      <button class="btnIaCmd" data-cmd="resumo de atendimento" style="${btn}">Resumo</button>
-      <button class="btnIaCmd" data-cmd="nota interna" style="${btn}">Nota interna</button>
-      <button class="btnIaCmd" data-cmd="mensagem publica" style="${btn}">Mensagem pública</button>
-      <button class="btnIaCmd" data-cmd="encaminhamento para Desenvolvimento" style="${btn}">Encaminhar Dev</button>
-      <button class="btnIaCmd" data-cmd="devolutiva ao cliente" style="${btn}">Devolutiva</button>
+      <button class="btnIaCmd" data-cmd="resumo de atendimento" style="${btn}">📝 Resumo</button>
+      <button class="btnIaCmd" data-cmd="nota interna" style="${btn}">📌 Nota</button>
+      <button class="btnIaCmd" data-cmd="mensagem publica" style="${btn}">💬 Mensagem</button>
+      <button class="btnIaCmd" data-cmd="encaminhamento para Desenvolvimento" style="${btn}">🚀 Encaminhar Dev</button>
+      <button class="btnIaCmd" data-cmd="devolutiva ao cliente" style="${btn}">📤 Devolutiva</button>
       <button id="btnIaLimpar" style="${btn}">Limpar chat</button>
     </div>
   </div>`;
