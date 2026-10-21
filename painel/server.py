@@ -1208,6 +1208,16 @@ class Handler(BaseHTTPRequestHandler):
         if anexo_texto:
             contexto = (contexto or "") + "\n## ANEXO\n" + anexo_texto[:6000] + "\n"
 
+        # Mesclas e tickets da mesma empresa (se relevante)
+        try:
+            low = (texto or "").lower()
+            if any(w in low for w in ("mesclar", "duplicado", "mesma empresa", "mesmo cliente", "mesmo assunto")):
+                from dados import build_mesclas
+                m = build_mesclas("atual", None)
+                for it in (m.get("itens") or [])[:8]:
+                    contexto += "\n- Mescla candidata: #%s e #%s (%s) - %s" % (it.get("ticket_a"), it.get("ticket_b"), it.get("cliente"), it.get("motivo"))
+        except Exception:
+            pass
         if contexto_ticket and contexto_ticket not in (contexto or ""):
             contexto = (contexto or "") + contexto_ticket
         contexto = contexto[:4000]
