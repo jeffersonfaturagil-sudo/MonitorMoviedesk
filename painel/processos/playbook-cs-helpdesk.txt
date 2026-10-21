@@ -1,0 +1,64 @@
+
+Playbook CS e HelpDesk | FaturÁgil
+
+
+
+Não tem prazo ou previsão? Quando for necessário analisar algo ou esperar retorno de um fornecedor:
+
+Quando não temos um prazo para responder ao cliente, uma forma melhor de falarmos é "Nossa equipe está verificando", em vez de dizer que o time de desenvolvimento está…
+Pois assim não fica a responsabilidade em um departamento.
+Melhor falar “a equipe”, que a responsabilidade é da empresa.
+Caso o cliente insista, daí podemos até falar do time dev, ou algum caso que seja necessário falar de forma mais técnica.
+Padronizar "equipe", se necessário falamos do dev.
+
+Exemplo de uma conversa:
+
+"Marcelo, sobre a emissão de municípios que possuem fornecedor IPM estão tendo problema de emissão, nossa equipe está analisando, um momento por gentileza"
+
+"Nossa equipe está ciente e já estamos trabalhando para solucionar o problema. Em breve as emissões serão normalizadas."
+
+esse breve, seria que horas?
+
+"Estamos analisando para solução o quanto antes, um momento"
+
+"Marcelo, verifiquei que você já possui um ticket com a Erika, sobre este ponto 235956, estamos trabalhando no problema para resolução o quanto antes, sendo buscado para resolução hoje!"
+
+"Nossa equipe está empenhada na resolução, devido ser um grande fornecedor de webservice"
+
+"A Erika irá interagir no ticket, assim que resolvido"
+
+Obrigado Rafa.
+
+“Por ora, eu poderia lhe ajudar em algo mais?”
+
+por enquanto é isso
+
+“Disponha Marcelo Yukio Outa, qualquer dúvida estamos sempre à disposição. Por gentileza, ao finalizar o bate-papo, avalie meu atendimento.
+Tenha um ótimo dia!”
+
+
+NFSe Prefeitura / Tecnospeed
+
+Quando o cliente solicita algo referente a NFSe que esteja dando problema, 
+Informar ao cliente, por exemplo: “que estamos verificando com o Webservice da Prefeitura”
+
+PS: não mencionar a Tecnospeed, pois é uma ferramenta que está embutida no FaturÁgil que não aparece para o cliente
+
+SLA:
+Se for possível falar um prazo, informe ao cliente. Caso o prazo não possa mais ser cumprido, atualize o cliente que o prazo mudou e o motivo.
+Caso não tenha prazo, informe que a “equipe está trabalhando para solucionar a situação/problema/etc, e em breve será normalizado/resolvido”
+
+
+Boleto e Cartão PJBank
+
+Quando o cliente solicita algo referente que esteja dando problema, 
+Informar ao cliente, por exemplo: “que estamos verificando com a própria PJBank”
+
+PS: nesse caso, pode mencionar a PJBank, pois o cliente tem conhecimento desse fornecedor.
+
+SLA:
+???
+
+
+
+

@@ -1,0 +1,170 @@
+# DECISÃO RÁPIDA — O QUE FAZER COM O TICKET
+
+Arquivo canônico de decisão para o suporte. Responde as 3 dúvidas mais comuns:
+1. É o Suporte que faz?
+2. O ticket já pode ser encerrado?
+3. O que falta / próximo passo?
+
+Use também o playbook-movidesk.txt (status/justificativas) e o playbook-suporte.txt (rotina/evidências).
+
+===============================================================================
+
+# É DO SUPORTE? — QUEM É RESPONSÁVEL
+
+Suporte (nós) executa:
+- Recepção de tickets novos e respondidos pelo cliente.
+- Orientação de uso do sistema, configuração básica, boletos, NFS-e, e-mail.
+- Cobrança/atendimento de pendências do cliente (faturas, boletos, NFS-e).
+- Escalação para Dev/Implantação/Fornecedor quando for fora do nosso escopo.
+- Acompanhamento e cobrança de áreas (dev, fornecedor, implantação) — manter cliente atualizado.
+
+NÃO é do Suporte (encaminhar / acompanhar):
+- Desenvolvimento de funcionalidade ou correção de bug → Dev (Aguardando » Equipe de desenvolvimento).
+- Implantação/onboarding/treinamento → Implantação (Implantação » ...).
+- Análise de viabilidade → Equipe de análise (Aguardando » Equipe de análise).
+- Liberação de versão → Aguardando » Liberação de versão.
+- Fornecedor (Tecnospeed, PJBank, bancos) → Aguardando » Retorno de Fornecedor.
+- Orçamento → Aguardando » Aprovação de orçamento.
+
+Regra de ouro: se o ticket exige código, versão nova ou análise de viabilidade, NÃO é do Suporte — acompanhe e cobre a área.
+
+===============================================================================
+
+# O TICKET JÁ PODE SER ENCERRADO?
+
+Sim (encerrar / marcar "Para encerramento"), quando:
+- Já foi resolvido e estamos aguardando feedback do cliente (Aguardando » Retorno do cliente - Para encerramento).
+- Cliente não respondeu em 5 dias úteis → sistema resolve automaticamente.
+- Playbook: "já foi resolvido, mas estamos aguardando feedback do cliente caso ele tenha alguma consideração adicional."
+
+NÃO encerrar (continuar atendendo), quando:
+- Continuidade: Aguardando » Retorno do cliente - Para continuidade → se sem resposta, LIGAR para coletar feedback (não encerrar).
+- Bloqueio com Dev/Implantação/Fornecedor → acompanhar, não encerrar.
+- Cliente ainda precisa agir (Aguardando cliente) → cobrar, não encerrar.
+
+Checklist antes de encerrar:
+1. O problema foi resolvido? (evidências em mãos)
+2. O cliente recebeu a solução? (print/retorno)
+3. Passaram 5 dias úteis sem resposta? (se sim, auto-resolução)
+4. Se for Continuidade → LIGAR antes de qualquer encerramento.
+
+===============================================================================
+
+# PRÓXIMO PASSO POR STATUS / JUSTIFICATIVA
+
+Novo → Fazer recepção; verificar se cliente está em implantação (se sim, copiar implantador).
+Em atendimento → Executar a ação; atualizar status/justificativa.
+Aguardando » Equipe de análise → Cobrar análise; manter cliente informado.
+Aguardando » Equipe de desenvolvimento → Cobrar dev; informar prazo ao cliente.
+Aguardando » Liberação de versão → Aguardar versão; avisar cliente.
+Aguardando » Retorno de Fornecedor → Cobrar fornecedor (Tecnospeed/PJBank/banco).
+Aguardando » Retorno do cliente - Para continuidade → LIGAR se sem resposta.
+Aguardando » Retorno do cliente - Para encerramento → Aguardar 5 dias; auto-resolve.
+Aguardando » Aprovação de orçamento → (removido provisoriamente)
+Implantação » * → Responsável: Implantação.
+Resolvido → Verificar se pode ir para "Para encerramento".
+Fechado/Cancelado → Conferir se foi indevido; reabrir se necessário.
+
+===============================================================================
+
+# DUPLA CHECAGEM (ao atender)
+
+1. Pesquisar no playbook e na base de conhecimento.
+2. Pesquisar tickets com assunto semelhante.
+3. Solicitar ajuda aos colegas (suporte/implantação) — canal de voz para troca de experiência.
+4. Solicitar ajuda de analista — com evidências (prints, questionamentos, apontamentos).
+
+Ao atender um cliente:
+- Verificar se o cliente está em implantação → se sim, comunicar (copiar) o implantador responsável.
+- Cliente pode enviar arquivos para configuração de NFS-e ou dados bancários → essencial para o implantador.
+
+===============================================================================
+
+# EVIDÊNCIAS
+
+Sempre ter evidências para não ter motivo de contestação.
+"toda prova será usada em um tribunal" — prints, conversas, telefonemas.
+
+===============================================================================
+
+# ROTINA DO SUPORTE
+
+1. Verificar tickets Novos e respondidos pelo cliente — fazer a recepção.
+   - Tickets de onboarding respondidos pelo cliente: recepção + encaminhar ao implantador responsável.
+2. Preparar informações para a Daily.
+3. Situações novas não presentes no playbook → atualizar o material.
+4. Apresentar na daily seguinte as atualizações do playbook.
+5. Verificar tickets parados.
+
+===============================================================================
+
+# PRIORIDADES URGENTES
+
+Boleto/Cobrança, Nota Fiscal, E-mail — cliente precisa receber pagamento sem obstrução ao fluxo de caixa.
+
+===============================================================================
+
+# COMO RESPONDER POR E-MAIL
+
+- Seja objetivo.
+- Numere e ordene ações que o cliente deve realizar.
+- Evite repetições (redundância).
+- Revise o texto antes de enviar.
+
+===============================================================================
+
+# EDUCAR O CLIENTE
+
+- Sempre pedir print ao cliente.
+- Não pesquisar pelo nome do cliente — pedir para o cliente enviar o print; ensinar.
+
+===============================================================================
+
+# PASTAS NO DRIVE (canônico)
+
+Pasta do Suporte: Suporte Embradev FaturÁgil
+Pasta dos Clientes: Clientes implantação / treinamento
+Pasta de manuais: Manuais
+Pasta de NFS-e Tecnospeed: NFS-e - nota fiscal de serviço eletrônica - Tecnospeed
+Pasta da PJBank: PJBank - Boleto, Cartão e Conta Digital
+Pasta Lista de Ramais
+Atalho: Playbook de Implantação - FaturÁgil
+
+===============================================================================
+
+# STATUS (Movidesk)
+
+Novo / Aguardando / Em atendimento / Implantação / Resolvido / Fechado / Cancelado
+
+Justificativas (subcategoria do status):
+- Novo » Implantação liberada
+- Aguardando » Equipe de análise
+- Aguardando » Equipe de desenvolvimento
+- Aguardando » Liberação de versão
+- Aguardando » Retorno de Fornecedor
+- Aguardando » Retorno do cliente - Para continuidade (LIGAR se sem resposta)
+- Aguardando » Retorno do cliente - Para encerramento (auto-resolve em 5 dias)
+- Aguardando » Aprovação de orçamento (removido provisoriamente)
+- Implantação » Agendar onboarding / Call 1-4 / Call Extra / Onboarding Assistido / Devolutiva Vendas
+
+===============================================================================
+
+# AGENDAMENTO (implantação)
+
+Adicionar ação com as sugestões de horário.
+Ligar se o cliente não responder em até 01h00.
+
+===============================================================================
+
+# REFERÊNCIAS RÁPIDAS
+
+Help Desk: https://atendimento.faturagil.com.br/
+Base de conhecimento: https://atendimento.faturagil.com.br/kb/article/199704/ola-que-bom-te-ver-por-aqui
+Suporte Embradev (Ricardo): ricardo@faturagil.com.br (webmail.faturagil.com.br) — senha ssoft2017E!dev
+Suporte Embradev: suporte@embradev.com.br (email.uolhost.com.br/embradev.com.br) — senha ssoft2017E!dev
+Suporte FaturÁgil: suporte@faturagil.com.br (webmail.faturagil.com.br) — senha ssoft2017E!dev
+Obs: não alterar a senha (usada em automações do sistema).
+
+Fornecedores:
+- Tecnospeed NFSe: https://atendimento.tecnospeed.com.br/hc/pt-br — suporte@embradev.com.br / ssoft2017E!dev
+- PJBank: https://pjbank.zendesk.com/hc/pt-br/requests — suporte@embradev.com.br / ssoft2017E!dev

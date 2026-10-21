@@ -1,0 +1,96 @@
+KPI de Suporte
+
+
+# META: Aumentar % de Resolvidos em 1º atendimento para 50%.
+
+Dados extraídos do Movidesk:
+Mês Novembro (dia 01 a 11)
+Todos os chats: 111
+Resolvidos em 1º atendimento: 43
+Não Resolvidos em 1º atendimento: 70
+% de Resolvidos em 1º atendimento: 38%
+
+
+O que significa esse  % ?
+ alta demanda 
+ está faltando gente no time para dar conta 
+ capacitação baixa do time
+ algum bug no sistema
+ problema de fornecedores
+
+Resultados esperados ao aumentar esse indicador?
+ cliente mais educado e entende mais rápido 
+ time mais capacitado
+ redução de novos chats abertos por cliente
+sobra mais tempo para o time pensar em estratégias e melhores na operação, para estudar mais 
+
+O que iremos fazer para reduzir esse %?
+Ações a serem realizadas: 
+Realizar treinamentos internos para capacitar a equipe (Link de Pagamento, Conciliação OFX)
+Revisar/Editar e Criar novos artigos/macros
+Gravar vídeos para o time interno, assim como, para capacitação e treinamento para novos colaboradores (exemplo: Módulo Honorário Adicional )
+Criar o “CHATGPT” do FaturÁgil de toda base de conhecimento do FaturÁgil para nosso time interno consultar.
+
+OBS: 
+Algumas ações já estão sendo realizadas, mas falta colocar ritmo e consistência na realização dessas ações.
+Ao gravar os vídeos para uso interno, iremos treinar essa habilidade de gravar. 
+
+
+
+# META: Reduzir Tempo Médio de Chat para 40 min.
+
+Dados extraídos do Movidesk:
+Tempo médio de chat atual: 45 min
+
+
+
+Caso o tempo esteja alto, significa:
+ qualificação do time/ conhecimento do assunto
+ alta demanda
+ dependência de terceiros: nosso desenvolvimento; bancos (pjbank); notas (tecnospeed)
+ dependência da coordenação (Lesley) 
+ períodos do ano: honorários final de ano; reajustes início de ano
+ casos esporádicos: reforma tributária, migração ambiente nacional
+
+Resultados esperados ao reduzir o tempo desse indicador ?
+ ?
+?
+?
+
+O que iremos fazer para reduzir esse tempo?
+Ações a serem realizadas: 
+ ?
+?
+?
+
+
+
+
+
+
+# META: Fechar 20 tickets antigos por SEMANA (cada um).
+
+Dados extraídos do Movidesk:
+Temos 1.050 tickets antigos em aberto
+
+
+
+Caso a quantidade esteja alta, significa:
+Estamos deixando o cliente no vácuo 
+?
+?
+
+Resultados esperados ao aumentar esse indicador?
+focar em resolver tickets parados
+usar tempo ocioso
+reduzir tickets antigos (hoje está em 1.050)
+isso direciona para a programação desenvolver funcionalidades que resolvem mais problemas e/ou agrega mais valor
+
+O que iremos fazer para reduzir os tickets?
+Ações a serem realizadas: 
+?
+?
+?
+
+
+

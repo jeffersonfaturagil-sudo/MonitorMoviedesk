@@ -1,0 +1,3 @@
+# Dependencias de execucao do Painel Movidesk.
+# No Linux Mint/Ubuntu costuma bastar: sudo apt install -y python3-requests
+requests>=2.28

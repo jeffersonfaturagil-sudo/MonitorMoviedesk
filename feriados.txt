@@ -1,0 +1,8 @@
+# Feriados extras para a agenda (alem dos feriados nacionais, ja automaticos).
+# Uma data por linha, no formato AAAA-MM-DD. Linhas iniciadas por # sao ignoradas.
+# Preencha aqui feriados municipais/estaduais ou pontos facultativos da sua regiao.
+#
+# Exemplos (descomente e ajuste):
+# 2026-12-08
+# 2026-12-24
+# 2026-12-31

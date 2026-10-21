@@ -1,0 +1,4 @@
+# Dependencias para rodar os testes (usadas no CI e no desenvolvimento).
+# Sem pytest tambem da para rodar `python3 run_tests.py` (runner proprio).
+-r requirements.txt
+pytest>=7
