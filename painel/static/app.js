@@ -1209,6 +1209,10 @@ function toggleGrupo(nome) {
 function render() {
   if (dados && dados.agenda && !modeloAgendaPadrao) modeloAgendaPadrao = dados.agenda.texto;
   try {
+    const u = document.getElementById("ultima");
+    if (u && dados && dados.gerado_em) u.textContent = "Atualizado: " + dados.gerado_em;
+  } catch (e) {}
+  try {
     const b = document.getElementById("banner");
     if (b && dados && dados.resumo) {
       const r = dados.resumo;
