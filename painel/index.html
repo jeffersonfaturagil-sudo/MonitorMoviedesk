@@ -121,5 +121,13 @@
     <div id="cfResp" style="margin-top:10px;font-size:13px;white-space:pre-wrap"></div>
   </div>
 </div>
+
+<button id="btnTopo" onclick="window.scrollTo({top:0,behavior:'smooth'})" style="position:fixed;bottom:90px;right:24px;width:40px;height:40px;border-radius:50%;background:#374151;color:#fff;border:none;cursor:pointer;font-size:18px;box-shadow:0 4px 12px rgba(0,0,0,.2);z-index:9997;display:none" title="Voltar ao topo">↑</button>
+<script>
+window.addEventListener("scroll", () => {
+  const b = document.getElementById("btnTopo");
+  if (b) b.style.display = window.scrollY > 300 ? "flex" : "none";
+});
+</script>
 </body>
 </html>
