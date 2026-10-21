@@ -4388,7 +4388,9 @@ document.addEventListener("DOMContentLoaded", function() {
     var ticket = (document.getElementById("cfTicket") || {}).value || "";
     var file = (document.getElementById("cfArquivo") || {}).files[0];
     var resp = document.getElementById("cfResp");
-    if (resp) resp.textContent = "Consultando IA...";
+    var chat = document.getElementById("cfChat");
+    if (resp) resp.textContent = "";
+    if (chat) chat.innerHTML += "<div style='margin-bottom:6px'><b>Você:</b> " + (txt||"(anexo)") + "</div>";
     var payload = { texto: txt, ticket_id: ticket || null };
     if (caminho) payload.caminho_pdf = caminho;
     if (file) {
@@ -4405,7 +4407,8 @@ document.addEventListener("DOMContentLoaded", function() {
       var r = await fetch("/api/ia", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       var j = await r.json();
       if (j.erro) throw new Error(j.erro);
-      if (resp) resp.textContent = j.resposta || "(sem resposta)";
+      if (chat) chat.innerHTML += "<div style='margin-bottom:6px'><b>IA:</b> <span style='white-space:pre-wrap'>" + (j.resposta||"") + "</span></div>";
+      if (resp) resp.textContent = "";
       const taf = document.getElementById("cfTexto");
       if (taf) taf.focus();
     } catch (e) {
