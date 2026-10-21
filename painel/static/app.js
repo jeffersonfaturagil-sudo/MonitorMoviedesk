@@ -4394,7 +4394,8 @@ document.addEventListener("DOMContentLoaded", function() {
     var chat = document.getElementById("cfChat");
     if (resp) resp.textContent = "";
     if (chat) chat.innerHTML += "<div style='margin-bottom:6px'><b>Você:</b> " + (txt||"(anexo)") + "</div>";
-    var payload = { texto: txt, ticket_id: ticket || null };
+    iaHistorico.push({ role: "user", content: txt || "(anexo)" });
+    var payload = { texto: txt, ticket_id: ticket || null, historico: iaHistorico.slice(0,-1) };
     if (caminho) payload.caminho_pdf = caminho;
     if (file) {
       var b64 = await new Promise(function(res, rej) {
@@ -4410,7 +4411,12 @@ document.addEventListener("DOMContentLoaded", function() {
       var r = await fetch("/api/ia", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       var j = await r.json();
       if (j.erro) throw new Error(j.erro);
-      if (chat) chat.innerHTML += "<div style='margin-bottom:6px'><b>IA:</b> <span style='white-space:pre-wrap'>" + (j.resposta||"") + "</span></div>";
+      iaHistorico.push({ role: "assistant", content: j.resposta || "" });
+      iaUltima = { texto: txt, resposta_id: j.resposta_id, fontes: j.fontes || [] };
+      var extra = "";
+      if (j.intencao) extra += " 🎯 " + j.intencao;
+      if (j.fontes && j.fontes.length) extra += " 📎 " + j.fontes.map(function(f){return f.tipo+":"+f.id;}).join(", ");
+      if (chat) chat.innerHTML += "<div style='margin-bottom:6px'><b>IA:</b> <span style='white-space:pre-wrap'>" + (j.resposta||"") + "</span>" + extra + "<div style='margin-top:4px;font-size:12px'>Útil? <button onclick='avaliarIa(" + JSON.stringify(txt).replace(/</g,"\\u003c") + ",1)' style='border:none;background:none;cursor:pointer'>👍</button> <button onclick='avaliarIaNegativo(" + JSON.stringify(txt).replace(/</g,"\\u003c") + ")' style='border:none;background:none;cursor:pointer'>👎</button></div></div>";
       if (resp) resp.textContent = "";
       const taf = document.getElementById("cfTexto");
       if (taf) taf.focus();
