@@ -1032,8 +1032,11 @@ class Handler(BaseHTTPRequestHandler):
         chave = hashlib.sha256((texto + "|" + (body.get("historico") and str(body.get("historico")) or "")).encode("utf-8")).hexdigest()
         if chave in cache:
             c = cache[chave]
-            self._json({"ok": True, "resposta": c.get("resposta", ""), "modelo": c.get("modelo"), "artigos": c.get("artigos", []), "macros": c.get("macros", []), "intencao": c.get("intencao"), "cache": True})
+            self._json({"ok": True, "resposta": c.get("resposta", ""), "modelo": c.get("modelo"), "artigos": c.get("artigos", []), "macros": c.get("macros", []), "intencao": c.get("intencao"), "resposta_id": c.get("resposta_id"), "fontes": c.get("fontes", []), "cache": True})
             return
+        import uuid
+        resposta_id = "resp-" + uuid.uuid4().hex[:12]
+        fontes_utilizadas = []
         # Contexto limitado: processos relevantes + tickets similares + artigos
         contexto = ""
         # Casos de referencia validados (prioridade)
@@ -1050,6 +1053,7 @@ class Handler(BaseHTTPRequestHandler):
                     relevantes.append((score, c))
             relevantes.sort(key=lambda x: -x[0])
             for _, c in relevantes[:3]:
+                fontes_utilizadas.append({"tipo": "caso", "id": c.get("id"), "versao": c.get("versao")})
                 contexto += "\n## CASO VALIDADO: %s\nDiagnostico: %s\nProcedimento: %s\nResposta aprovada: %s\n" % (
                     (c.get("pergunta") or "")[:200],
                     (c.get("diagnostico") or "")[:400],
@@ -1062,6 +1066,7 @@ class Handler(BaseHTTPRequestHandler):
             import processos
             docs, _, _ = processos.buscar(texto[:500])
             for d in (docs or [])[:3]:
+                fontes_utilizadas.append({"tipo": "processo", "id": d.get("arquivo") or d.get("titulo")})
                 for sec in (d.get("secoes") or [])[:2]:
                     contexto += "\n## " + (sec.get("titulo") or "") + "\n" + (sec.get("texto") or "")[:800] + "\n"
         except Exception:
@@ -1070,6 +1075,7 @@ class Handler(BaseHTTPRequestHandler):
             from dados import buscar_historico
             hist = buscar_historico(texto, limite=5)
             for it in (hist.get("itens") or [])[:5]:
+                fontes_utilizadas.append({"tipo": "ticket", "id": it.get("ticket")})
                 contexto += "\n- Ticket #%s: %s (%s)" % (it.get("ticket"), (it.get("assunto") or "")[:120], (it.get("resolvido_em") or ""))
         except Exception:
             pass
@@ -1077,7 +1083,7 @@ class Handler(BaseHTTPRequestHandler):
         prompt = "CONTEXTO:\n" + contexto + "\n\nPERGUNTA/CHAT:\n"
         try:
             import requests
-            messages = [{"role": "system", "content": "Você é assistente de suporte do FaturAgil. Responda em português, de forma objetiva, com passos práticos. Priorize casos validados e playbooks. Diferencie fatos, hipóteses e informações ausentes. Cite fontes quando disponíveis. Não invente prazos ou desfechos. Se não souber, diga."}]
+            messages = [{"role": "system", "content": "Você é assistente de suporte do FaturAgil. Responda em português, de forma objetiva, com passos práticos. Priorize casos validados e playbooks. Diferencie claramente: (1) Fatos confirmados pelas fontes; (2) Hipóteses não confirmadas; (3) Informações ausentes; (4) Próximos passos recomendados. Não invente prazos, configurações, procedimentos executados, diagnósticos ou desfechos. Se não houver evidência suficiente, oriente coleta de informações ou encaminhamento. Cite fontes quando disponíveis. Se não souber, diga."}]
             for h in (historico or []):
                 if isinstance(h, dict) and h.get("role") and h.get("content"):
                     messages.append({"role": h["role"], "content": str(h["content"])[:2000]})
@@ -1128,7 +1134,7 @@ class Handler(BaseHTTPRequestHandler):
                         else:
                             intencao = "responder"
                         try:
-                            cache[chave] = {"resposta": resposta, "modelo": modelo, "artigos": artigos, "macros": macros, "intencao": intencao}
+                            cache[chave] = {"resposta": resposta, "modelo": modelo, "artigos": artigos, "macros": macros, "intencao": intencao, "resposta_id": resposta_id, "contexto": contexto, "fontes": fontes_utilizadas}
                             # limita cache a 200
                             if len(cache) > 200:
                                 for k in list(cache.keys())[:len(cache)-200]:
@@ -1137,7 +1143,8 @@ class Handler(BaseHTTPRequestHandler):
                         except Exception:
                             pass
                         self._json({"ok": True, "resposta": resposta, "modelo": modelo,
-                                    "artigos": artigos, "macros": macros, "intencao": intencao})
+                                    "artigos": artigos, "macros": macros, "intencao": intencao,
+                                    "resposta_id": resposta_id, "fontes": fontes_utilizadas})
                         return
                     ultimo_erro = "OpenRouter HTTP %d: %s" % (resp.status_code, resp.text[:200])
                 except Exception as exc:
@@ -1163,7 +1170,7 @@ class Handler(BaseHTTPRequestHandler):
         chave = hashlib.sha256((texto + "|" + (body.get("historico") and str(body.get("historico")) or "")).encode("utf-8")).hexdigest()
         if chave in cache:
             c = cache[chave]
-            self._json({"ok": True, "resposta": c.get("resposta", ""), "modelo": c.get("modelo"), "artigos": c.get("artigos", []), "macros": c.get("macros", []), "intencao": c.get("intencao"), "cache": True})
+            self._json({"ok": True, "resposta": c.get("resposta", ""), "modelo": c.get("modelo"), "artigos": c.get("artigos", []), "macros": c.get("macros", []), "intencao": c.get("intencao"), "resposta_id": c.get("resposta_id"), "fontes": c.get("fontes", []), "cache": True})
             return
         try:
             import requests
@@ -1208,6 +1215,10 @@ class Handler(BaseHTTPRequestHandler):
         resposta_corrigida = (body.get("resposta_corrigida") or "").strip() or None
         if resposta_corrigida is not None and len(resposta_corrigida) > 4000:
             resposta_corrigida = resposta_corrigida[:4000]
+        resposta_id = (body.get("resposta_id") or "").strip() or None
+        fontes_body = body.get("fontes")
+        if not isinstance(fontes_body, list):
+            fontes_body = None
         # fontes/contexto: usa enviados ou recomputa
         contexto = (body.get("contexto") or "").strip() or None
         fontes = body.get("fontes")
@@ -1247,8 +1258,9 @@ class Handler(BaseHTTPRequestHandler):
             "nota": nota,
             "motivo": motivo,
             "resposta_corrigida": resposta_corrigida,
+            "resposta_id": resposta_id,
             "contexto": contexto,
-            "fontes": fontes,
+            "fontes": fontes if fontes is not None else fontes_body,
             "ts": datetime.now().isoformat(timespec="seconds"),
         }
         # preserva campos antigos (nota/texto/ts) - ja presentes
