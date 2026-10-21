@@ -1084,6 +1084,16 @@ class Handler(BaseHTTPRequestHandler):
                         "Sua finalidade é ajudar o analista com dúvidas, procedimentos, "
                         "históricos e orientações baseadas no conhecimento disponível da empresa. "
                         "Responda diretamente, sem buscar tickets ou macros.\n")
+        # Conhecimento da empresa (compacto)
+        try:
+            from pathlib import Path
+            cf = Path(__file__).resolve().parent.parent / "painel" / "conhecimento_faturagil.txt"
+            if cf.exists():
+                txt = cf.read_text(encoding="utf-8")[:1500]
+                contexto = (contexto or "") + "\n## CONHECIMENTO DA EMPRESA\n" + txt + "\n"
+                fontes_utilizadas.append({"tipo": "conhecimento", "id": "faturagil"})
+        except Exception:
+            pass
         if contexto_ticket:
             contexto = (contexto or "") + contexto_ticket
         # Casos de referencia validados (prioridade)
