@@ -4148,6 +4148,8 @@ $("painel").addEventListener("click", async (e) => {
         extra += `<div style="margin-top:4px;font-size:12px">🧩 Macros sugeridas: ${j.macros.map(m => esc(m.nome)).join("; ")}</div>`;
       }
       if (chat) chat.innerHTML += `<div style="margin-bottom:6px"><b>IA${j.modelo ? " ("+esc(j.modelo)+")" : ""}:</b> <span style="white-space:pre-wrap">${esc(j.resposta||"")}</span>${extra}</div>`;
+    const ta = document.getElementById("iaTexto");
+    if (ta) ta.focus();
     } catch (err) {
       if (chat) chat.innerHTML += `<div style="color:#a00;margin-bottom:6px">Erro: ${esc(err.message||err)}</div>`;
     }
@@ -4404,6 +4406,8 @@ document.addEventListener("DOMContentLoaded", function() {
       var j = await r.json();
       if (j.erro) throw new Error(j.erro);
       if (resp) resp.textContent = j.resposta || "(sem resposta)";
+      const taf = document.getElementById("cfTexto");
+      if (taf) taf.focus();
     } catch (e) {
       if (resp) resp.textContent = "Erro: " + (e.message || e);
     }
