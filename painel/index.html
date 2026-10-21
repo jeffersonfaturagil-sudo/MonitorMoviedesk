@@ -1533,8 +1533,12 @@ function telaDuvidas() {
       </select>
     </div>
     <textarea id="iaTexto" rows="4" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px" placeholder="Cole aqui o erro ou chat..."></textarea>
-    <div style="margin-top:8px;display:flex;gap:6px">
+    <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
       <button id="btnIa" style="${btn}">Perguntar à IA</button>
+      <button class="btnIaCmd" data-cmd="resumo de atendimento" style="${btn}">Resumo</button>
+      <button class="btnIaCmd" data-cmd="nota interna" style="${btn}">Nota interna</button>
+      <button class="btnIaCmd" data-cmd="mensagem publica" style="${btn}">Mensagem pública</button>
+      <button class="btnIaCmd" data-cmd="encaminhamento para Desenvolvimento" style="${btn}">Encaminhar Dev</button>
       <button id="btnIaLimpar" style="${btn}">Limpar chat</button>
     </div>
   </div>`;
@@ -4229,6 +4233,14 @@ $("painel").addEventListener("click", async (e) => {
     iaHistorico = [];
     const chat = $("iaChat");
     if (chat) chat.innerHTML = "";
+    return;
+  }
+  const btnCmd = e.target.closest && e.target.closest(".btnIaCmd");
+  if (btnCmd) {
+    const sel = $("iaComando");
+    if (sel) sel.value = btnCmd.dataset.cmd || "";
+    const b = $("btnIa");
+    if (b) b.click();
     return;
   }
   if (e.target.id === "btnChecklistFechar") { checklistDados = null; checklistQ = ""; render(); return; }
