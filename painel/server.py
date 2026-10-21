@@ -1057,9 +1057,44 @@ class Handler(BaseHTTPRequestHandler):
             "com base em que", "para que serve", "qual sua funcao", "qual sua função",
             "voce e da", "você é da",
         ))
-        # Contexto do ticket selecionado (se houver)
+        # Contexto do ticket selecionado (se houver) + extrai IDs do texto
         contexto_ticket = ""
+        ids_no_texto = []
+        try:
+            import re
+            for m in re.finditer(r"(?:#|ticket\s*)(\d{4,})", texto or "", re.I):
+                ids_no_texto.append(int(m.group(1)))
+        except Exception:
+            pass
         if ticket_id:
+            try:
+                ids_no_texto.insert(0, int(ticket_id))
+            except (TypeError, ValueError):
+                pass
+        vistos = set()
+        ids_unicos = []
+        for tid in ids_no_texto:
+            if tid in vistos:
+                continue
+            vistos.add(tid)
+            ids_unicos.append(tid)
+        if ids_unicos:
+            try:
+                from dados import ticket_por_id
+                for tid in ids_unicos[:3]:
+                    t = ticket_por_id(tid)
+                    if t:
+                        contexto_ticket += ("\n## TICKET #%d\nAssunto: %s\nServico: %s\nStatus: %s\nJustificativa: %s\nOwner: %s\n" % (
+                            tid,
+                            (t.get("subject") or "")[:200],
+                            " / ".join(filter(None, [t.get("serviceFirstLevel"), t.get("serviceSecondLevel")])),
+                            (t.get("status") or ""),
+                            (t.get("justification") or "")[:300],
+                            ((t.get("owner") or {}).get("businessName") or (t.get("owner") or {}).get("email") or ""),
+                        ))
+            except Exception:
+                pass
+        if False and ticket_id:
             try:
                 tid = int(ticket_id)
                 from dados import ticket_por_id
