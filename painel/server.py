@@ -436,6 +436,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/agenda": self._agenda_rota,
             "/api/artigos": self._artigos_get,
             "/api/ia/cota": self._ia_cota,
+            "/api/ia/feedback/stats": self._ia_feedback_stats,
             "/api/ia/casos": self._ia_casos_get,
             "/api/ticket-html": self._ticket_html,
             "/api/ticket-anexos": self._ticket_anexos,
@@ -1425,6 +1426,23 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"erro": "caso nao encontrado"}, code=404)
             return
         self._json({"erro": "acao invalida"}, code=400)
+
+    def _ia_feedback_stats(self, params: dict):
+        import json
+        from pathlib import Path
+        from collections import Counter
+        p = Path(__file__).resolve().parent.parent / "cache" / "ia_feedback.json"
+        try:
+            dados = json.loads(p.read_text(encoding="utf-8")) if p.exists() else []
+        except Exception:
+            dados = []
+        if not isinstance(dados, list):
+            dados = []
+        pos = sum(1 for d in dados if d.get("nota") == 1)
+        neg = sum(1 for d in dados if d.get("nota") == -1)
+        motivos = Counter(d.get("motivo") for d in dados if d.get("motivo"))
+        self._json({"total": len(dados), "positivos": pos, "negativos": neg,
+                    "motivos": dict(motivos)})
 
     def _read_body(self) -> dict:
         try:
