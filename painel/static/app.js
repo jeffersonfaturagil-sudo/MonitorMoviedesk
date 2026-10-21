@@ -4131,6 +4131,7 @@ $("painel").addEventListener("click", async (e) => {
     const chat = $("iaChat");
     iaHistorico.push({ role: "user", content: txt });
     if (chat) chat.innerHTML += `<div style="margin-bottom:6px"><b>Você:</b> ${esc(txt || "(ticket "+ticketId+")")}</div>`;
+    if (chat) chat.innerHTML += `<div id="iaTyping" class="muted" style="margin-bottom:6px">IA digitando…</div>`;
     if ($("iaTexto")) $("iaTexto").value = "";
     try {
       const r = await fetch("/api/ia", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto: txt, historico: iaHistorico.slice(0,-1), ticket_id: ticketId || null, comando: comando || null }) });
@@ -4147,6 +4148,8 @@ $("painel").addEventListener("click", async (e) => {
       if (j.macros && j.macros.length) {
         extra += `<div style="margin-top:4px;font-size:12px">🧩 Macros sugeridas: ${j.macros.map(m => esc(m.nome)).join("; ")}</div>`;
       }
+      const typing = document.getElementById("iaTyping");
+      if (typing) typing.remove();
       if (chat) chat.innerHTML += `<div style="margin-bottom:6px"><b>IA${j.modelo ? " ("+esc(j.modelo)+")" : ""}:</b> <span style="white-space:pre-wrap">${esc(j.resposta||"")}</span>${extra}</div>`;
     const ta = document.getElementById("iaTexto");
     if (ta) ta.focus();

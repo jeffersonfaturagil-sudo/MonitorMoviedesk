@@ -1023,6 +1023,7 @@ class Handler(BaseHTTPRequestHandler):
         historico = body.get("historico") or []
         ticket_id = body.get("ticket_id")
         comando = (body.get("comando") or "").strip()
+        stream = bool(body.get("stream"))
         arquivo_base64 = body.get("arquivo_base64")
         arquivo_nome = (body.get("arquivo_nome") or "").strip()
         caminho_pdf = (body.get("caminho_pdf") or "").strip()
@@ -1231,6 +1232,9 @@ class Handler(BaseHTTPRequestHandler):
                     "Verifique nos playbooks/casos se a funcionalidade existe antes de afirmar.")
             if comando:
                 _sys += " Tarefa: " + comando + ". Gere o texto solicitado."
+            if stream:
+                self._ia_stream_response(texto, contexto, None, _sys, comando, ticket_id, identidade, fontes_utilizadas, resposta_id, chave, cache, cache_path, body)
+                return
             messages = [{"role": "system", "content": _sys}]
             for h in (historico or []):
                 if isinstance(h, dict) and h.get("role") and h.get("content"):
@@ -1596,6 +1600,116 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"q": q, "total": len(scored), "itens": scored[:15]})
         except Exception as exc:
             self._json({"erro": str(exc)}, code=502)
+
+    def _ia_stream_response(self, texto, contexto, _unused, _sys, comando, ticket_id, identidade, fontes_utilizadas, resposta_id, chave, cache, cache_path, body):
+        import json, requests
+        historico = body.get("historico") or []
+        messages = [{"role": "system", "content": _sys}]
+        for h in (historico or []):
+            if isinstance(h, dict) and h.get("role") and h.get("content"):
+                messages.append({"role": h["role"], "content": str(h["content"])[:2000]})
+        messages.append({"role": "user", "content": ("CONTEXTO:\n" + (contexto or "") + "\n\nPERGUNTA/CHAT:\n" + texto[:3000])})
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        def send(obj):
+            try:
+                self.wfile.write(("data: " + json.dumps(obj, ensure_ascii=False) + "\n\n").encode("utf-8"))
+                self.wfile.flush()
+            except Exception:
+                pass
+        send({"tipo": "inicio"})
+        resposta = ""
+        modelo_usado = None
+        ultimo_erro = None
+        for modelo in (OPENROUTER_MODELS or [OPENROUTER_MODEL]):
+            try:
+                resp = requests.post(
+                    OPENROUTER_URL,
+                    headers={"Authorization": "Bearer " + OPENROUTER_API_KEY,
+                             "Content-Type": "application/json"},
+                    json={"model": modelo,
+                          "messages": messages,
+                          "max_tokens": 600,
+                          "stream": True},
+                    timeout=60,
+                    stream=True,
+                )
+                if resp.status_code != 200:
+                    ultimo_erro = "HTTP %d" % resp.status_code
+                    continue
+                modelo_usado = modelo
+                for line in resp.iter_lines():
+                    if not line:
+                        continue
+                    line = line.decode("utf-8", errors="ignore")
+                    if not line.startswith("data:"):
+                        continue
+                    data = line[5:].strip()
+                    if data == "[DONE]":
+                        break
+                    try:
+                        obj = json.loads(data)
+                    except Exception:
+                        continue
+                    choices = obj.get("choices") or []
+                    if not choices:
+                        continue
+                    delta = (choices[0].get("delta") or {}).get("content")
+                    if delta:
+                        resposta += delta
+                        send({"token": delta})
+                break
+            except Exception as exc:
+                ultimo_erro = str(exc)
+                continue
+        if modelo_usado is None:
+            send({"erro": ultimo_erro or "falha"})
+            return
+        low = (texto or "").lower()
+        if identidade:
+            intencao = "responder"
+        elif any(w in low for w in ("encerrar", "resolver", "concluir", "finalizar")):
+            intencao = "encerrar"
+        elif any(w in low for w in ("mesclar", "duplicado", "mesmo assunto", "mesma empresa")):
+            intencao = "mesclar"
+        elif any(w in low for w in ("escalar", "dev", "analise", "fornecedor", "implantacao")):
+            intencao = "escalar"
+        else:
+            intencao = "responder"
+        artigos = []
+        macros = []
+        try:
+            from api_client import MovideskClient
+            res = MovideskClient().search_articles(texto[:80], page_size=5)
+            for it in (res.get("itens") or [])[:5]:
+                artigos.append({"id": it.get("id"), "title": it.get("title"),
+                                "url": "https://atendimento.faturagil.com.br/kb/article/%s" % it.get("id")})
+        except Exception:
+            pass
+        if not identidade and fontes_utilizadas:
+            try:
+                from macros import sugerir_macros
+                sug = sugerir_macros()
+                toks = {t for t in (texto or "").lower().split() if len(t) >= 4}
+                for m in (sug.get("candidatos") or []):
+                    mt = (m.get("texto") or "").lower()
+                    if toks and any(t in mt for t in toks):
+                        macros.append({"nome": m.get("texto", "")[:80], "tickets": m.get("tickets")})
+                        if len(macros) >= 3:
+                            break
+            except Exception:
+                pass
+        try:
+            cache[chave] = {"resposta": resposta, "modelo": modelo_usado, "artigos": artigos, "macros": macros, "intencao": intencao, "resposta_id": resposta_id, "contexto": contexto, "fontes": fontes_utilizadas}
+            if len(cache) > 200:
+                for k in list(cache.keys())[:len(cache)-200]:
+                    cache.pop(k, None)
+            cache_path.write_text(json.dumps(cache, ensure_ascii=False), encoding="utf-8")
+        except Exception:
+            pass
+        send({"fim": True, "resposta": resposta, "modelo": modelo_usado, "artigos": artigos, "macros": macros, "intencao": intencao, "resposta_id": resposta_id, "fontes": fontes_utilizadas})
 
     def _read_body(self) -> dict:
         try:
