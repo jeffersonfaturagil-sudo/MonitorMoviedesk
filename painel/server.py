@@ -1174,7 +1174,9 @@ class Handler(BaseHTTPRequestHandler):
                     "Não use seções obrigatórias. Diferencie fatos confirmados, hipóteses e informações ausentes. "
                     "Não invente ações, prazos ou resultados. Se faltar evidência, diga o que precisa ser coletado. "
                     "Respeite limites entre Suporte, Implantação, Desenvolvimento, Financeiro e terceiros. "
-                    "Use o contexto do ticket selecionado quando disponível. Sugira macros e artigos apenas quando relevantes.")
+                    "Use o contexto do ticket selecionado quando disponível. Sugira macros e artigos apenas quando relevantes. "
+                    "Quando apropriado, inclua uma devolutiva pública para o cliente e o próximo passo. "
+                    "Verifique nos playbooks/casos se a funcionalidade existe antes de afirmar.")
             if comando:
                 _sys += " Tarefa: " + comando + ". Gere o texto solicitado."
             messages = [{"role": "system", "content": _sys}]

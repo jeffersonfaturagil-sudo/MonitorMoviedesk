@@ -1452,6 +1452,7 @@ function telaDuvidas() {
         <option value="nota interna">Nota interna</option>
         <option value="mensagem publica">Mensagem pública</option>
         <option value="encaminhamento para Desenvolvimento">Encaminhamento para Dev</option>
+        <option value="devolutiva ao cliente">Devolutiva ao cliente</option>
       </select>
     </div>
     <textarea id="iaTexto" rows="4" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px" placeholder="Cole aqui o erro ou chat..."></textarea>
@@ -1461,6 +1462,7 @@ function telaDuvidas() {
       <button class="btnIaCmd" data-cmd="nota interna" style="${btn}">Nota interna</button>
       <button class="btnIaCmd" data-cmd="mensagem publica" style="${btn}">Mensagem pública</button>
       <button class="btnIaCmd" data-cmd="encaminhamento para Desenvolvimento" style="${btn}">Encaminhar Dev</button>
+      <button class="btnIaCmd" data-cmd="devolutiva ao cliente" style="${btn}">Devolutiva</button>
       <button id="btnIaLimpar" style="${btn}">Limpar chat</button>
     </div>
   </div>`;
