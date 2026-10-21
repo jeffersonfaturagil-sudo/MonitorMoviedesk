@@ -1,5 +1,6 @@
 
 const $ = (id) => document.getElementById(id);
+const PAGINAS = { tamanho: 25, atual: {}, total: {} };
 let dados = null;
 let aba = "criticos";
 let agentes = [];
@@ -1001,7 +1002,8 @@ function tabelaPesquisa(lista, resumo) {
     return `<th class="ord" data-campo="${c}" style="cursor:pointer;user-select:none">${rotulo}${seta}</th>`;
   };
   const web = ((dados && dados.movidesk_web) || "https://faturagil.movidesk.com").replace(/\/$/, "");
-  const linhas = itens.map(i => {
+  const pag = paginar("pesquisa", itens);
+  const linhas = pag.fatia.map(i => {
     const cls = i.satisfeito ? "green" : (i.insatisfeito ? "red" : "gray");
     const rowStyle = i.insatisfeito ? "background:#fee2e2;" : "";
     const acao = i.insatisfeito
@@ -1023,7 +1025,7 @@ function tabelaPesquisa(lista, resumo) {
   return `<p class="muted" style="margin:0 0 10px;font-size:13px">${lista.length} resposta(s) - todas as do período${periodo} • ${pct}${nps} • clique nos cabeçalhos para ordenar</p>
   <table>
     <thead><tr>${th("ticket","Ticket")}${th("cliente","Cliente")}${th("assunto","Assunto")}${th("data_iso","Data")}${th("rotulo","Nota")}${th("comentario","Comentário")}</tr></thead>
-    <tbody>${linhas}</tbody></table>`;
+    <tbody>${linhas}</tbody></table>${pag.ctl}`;
 }
 
 
@@ -1503,8 +1505,9 @@ function telaDuvidas() {
     if (!filtrados.length) {
       html += `<div class="empty">Nenhum ticket resolvido parecido encontrado no índice local.</div>`;
     } else {
+      const pag = paginar("hist", filtrados);
       html += `<table><thead><tr><th>Ticket</th><th>Assunto</th><th>Cliente</th><th>Canal</th><th>Serviço</th><th>Atendente</th><th>Resolvido</th><th>Score</th><th></th></tr></thead><tbody>`;
-      for (const it of filtrados) {
+      for (const it of pag.fatia) {
         const det = histAcoes[it.ticket];
         html += `<tr>
           <td><a href="${web}/Ticket/Edit/${it.ticket}" target="_blank" rel="noopener">#${it.ticket}</a></td>
@@ -1525,7 +1528,7 @@ function telaDuvidas() {
           html += `<tr><td colspan="9" style="background:#f0fdf4">${renderSolucao(sol, web)}</td></tr>`;
         }
       }
-      html += `</tbody></table>`;
+      html += `</tbody></table>` + pag.ctl;
     }
   }
   // Busca combinada
@@ -1550,6 +1553,7 @@ async function buscarHist() {
     if (j.erro) throw new Error(j.erro);
     histItens = j.itens || [];
     histAcoes = {};
+    PAGINAS.atual["hist"] = 0;
     histMsg = `${histItens.length} resultado(s). Índice local: ${j.total_indice} tickets resolvidos. Termos: ${(j.termos || []).join(", ")}`;
   } catch (e) {
     histMsg = "Erro: " + e;
@@ -1557,13 +1561,42 @@ async function buscarHist() {
   render();
 }
 
+function setPagina(chave, n) {
+  const total = PAGINAS.total[chave] || 0;
+  const max = Math.max(0, Math.ceil(total / PAGINAS.tamanho) - 1);
+  PAGINAS.atual[chave] = Math.min(Math.max(0, n), max);
+  const y = window.scrollY;
+  render();
+  window.scrollTo(0, y);
+}
+function paginar(chave, itens) {
+  const total = itens.length;
+  PAGINAS.total[chave] = total;
+  const max = Math.max(0, Math.ceil(total / PAGINAS.tamanho) - 1);
+  let p = PAGINAS.atual[chave] || 0;
+  if (p > max) p = 0;
+  PAGINAS.atual[chave] = p;
+  const fatia = itens.slice(p * PAGINAS.tamanho, (p + 1) * PAGINAS.tamanho);
+  let ctl = "";
+  if (max > 0) {
+    const pb = "padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;background:#fff";
+    ctl = `<div style="display:flex;gap:10px;align-items:center;justify-content:flex-end;margin-top:10px;font-size:12px">
+      <button onclick="setPagina('${chave}',${p - 1})" ${p <= 0 ? "disabled" : ""} style="${pb};opacity:${p <= 0 ? 0.5 : 1}">← Anterior</button>
+      <span class="muted">Página ${p + 1} de ${max + 1} • ${total} registro(s)</span>
+      <button onclick="setPagina('${chave}',${p + 1})" ${p >= max ? "disabled" : ""} style="${pb};opacity:${p >= max ? 0.5 : 1}">Próxima →</button>
+    </div>`;
+  }
+  return { fatia, ctl };
+}
+
 function tabelaArtigos(web) {
   if (!artigosDados) return "";
   const itens = artigosDados.itens || [];
   if (!itens.length) return `<div class="empty">Nenhum artigo encontrado na base de conhecimento.</div>`;
   const btn = "padding:5px 9px;border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;background:#fff";
+  const { fatia, ctl } = paginar("artigos", itens);
   let html = `<table><thead><tr><th>Artigo</th><th>Título</th><th>Categoria</th><th>Atualizado</th><th></th></tr></thead><tbody>`;
-  for (const a of itens) {
+  for (const a of fatia) {
     const cat = (a.category || []).map(c => c.name).filter(Boolean).join(", ");
     const url = a.url || `${web}/kb/article/${a.id}`;
     html += `<tr>
@@ -1574,7 +1607,7 @@ function tabelaArtigos(web) {
       <td><a href="${url}" target="_blank" rel="noopener"><button style="${btn}">Abrir</button></a></td>
     </tr>`;
   }
-  return html + `</tbody></table>`;
+  return html + `</tbody></table>` + ctl;
 }
 
 async function buscarArtigos() {
@@ -1588,6 +1621,7 @@ async function buscarArtigos() {
     const j = await r.json();
     if (j.erro) throw new Error(j.erro);
     artigosDados = j;
+    PAGINAS.atual["artigos"] = 0;
     artigosMsg = `${(j.itens || []).length} artigo(s)${j.total != null ? ` de ${j.total}` : ""}${j.cache ? " (cache)" : ""}.`;
   } catch (e) {
     artigosDados = null;
