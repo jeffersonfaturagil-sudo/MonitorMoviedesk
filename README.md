@@ -37,6 +37,9 @@ parados, mescláveis, pendências, satisfação, plantão e histórico de contat
    MOVIDESK_AGENT_EMAIL=seu.email@faturagil.com.br
    MOVIDESK_WEB_URL=https://faturagil.movidesk.com
    MOVIDESK_PORT=8773
+   MOVIDESK_KB_URL=https://atendimento.faturagil.com.br
+   OPENROUTER_API_KEY=
+   OPENROUTER_MODEL=openai/gpt-4o-mini
    ```
 
 5. Abra pelo atalho, ou rode:
@@ -222,6 +225,15 @@ da tela — o `report.py` só formata.
   Cada pessoa usa o próprio token.
 - Sem Python instalado: `sudo apt update && sudo apt install -y python3`.
 - Se faltar `requests`: `sudo apt install -y python3-requests`.
+
+## Novidades recentes
+
+- Assistente de IA (OpenRouter) na aba Dúvidas/Histórico: cole um chat/erro e receba sugestão com base nos playbooks e tickets similares.
+- Central de pendências acionáveis: sem primeira resposta, internas por espera, próximos do encerramento, saídas da carga.
+- Exportação CSV nas abas Ranking, Gargalos, Inteligência e Central.
+- SLA derivado do playbook com aviso explícito (campos oficiais do Movidesk vêm vazios nesta conta).
+- Agrupamento de abas em seções + busca de abas + filtros persistentes (localStorage).
+- Painel lateral de conversa HTML + anexos por ticket.
 
 ## Testes
 
