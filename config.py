@@ -168,4 +168,5 @@ def primeiro_nome() -> str:
 # --- OpenRouter (IA) ---
 OPENROUTER_API_KEY = _cfg("OPENROUTER_API_KEY", "")
 OPENROUTER_MODEL = _cfg("OPENROUTER_MODEL", "openai/gpt-4o-mini")
+OPENROUTER_MODELS = [m.strip() for m in _cfg("OPENROUTER_MODELS", OPENROUTER_MODEL).split(",") if m.strip()]
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"

@@ -146,6 +146,7 @@ let macros = null;
 let macroValid = {};
 let macroBusca = null;
 let macroBuscaQ = "";
+let iaHistorico = [];
 let macroFiltro = "";
 let macroQ = "";
 let macroSug = null;
@@ -1236,6 +1237,29 @@ function toast(msg, tipo) {
   t._timer = setTimeout(() => { t.style.opacity = "0"; }, 2500);
 }
 
+
+async function carregarCotaIa() {
+  try {
+    const r = await fetch("/api/ia/cota");
+    const j = await r.json();
+    const el = $("iaCota");
+    if (!el) return;
+    if (j.erro) { el.textContent = "IA: " + j.erro; return; }
+    const uso = (j.uso != null) ? j.uso : (j.dados && j.dados.usage);
+    const lim = (j.limite != null) ? j.limite : (j.dados && j.dados.limit);
+    if (uso != null && lim != null) el.textContent = `uso ${uso}/${lim}`;
+    else if (uso != null) el.textContent = `uso ${uso} (sem limite)`;
+    else el.textContent = "cota: n/d";
+  } catch (e) {}
+}
+
+async function avaliarIa(texto, nota) {
+  try {
+    await fetch("/api/ia/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto: texto, nota: nota }) });
+    toast(nota > 0 ? "Obrigado pelo feedback!" : "Feedback registrado.", "ok");
+  } catch (e) {}
+}
+
 function render() {
   if (dados && dados.agenda && !modeloAgendaPadrao) modeloAgendaPadrao = dados.agenda.texto;
   try {
@@ -1250,7 +1274,7 @@ function render() {
     }
   } catch (e) {}
 
-  if (aba === "duvidas") { $("painel").innerHTML = telaDuvidas(); atualizarStatusHist(); return; }
+  if (aba === "duvidas") { $("painel").innerHTML = telaDuvidas(); atualizarStatusHist(); carregarCotaIa(); return; }
   if (aba === "plantao") {
     if (!plantao) {
       $("painel").innerHTML = `<div class="empty">Carregando plantão…</div>`;
@@ -1470,11 +1494,14 @@ function telaDuvidas() {
     ${tabelaArtigos(web)}
   </div>`;
   html += `<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px">
-    <div style="font-weight:600;margin-bottom:6px">Assistente IA (OpenRouter)</div>
-    <div class="muted" style="font-size:12px;margin-bottom:8px">Cole o chat/erro. A IA responde com base nos playbooks e tickets similares (contexto limitado).</div>
-    <textarea id="iaTexto" rows="6" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px" placeholder="Cole aqui o erro ou chat..."></textarea>
-    <div style="margin-top:8px"><button id="btnIa" style="${btn}">Perguntar à IA</button></div>
-    <div id="iaResp" class="muted" style="margin-top:10px;font-size:13px;white-space:pre-wrap"></div>
+    <div style="font-weight:600;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">Assistente IA (OpenRouter) <span id="iaCota" class="muted" style="font-size:11px"></span></div>
+    <div class="muted" style="font-size:12px;margin-bottom:8px">Cole o chat/erro. A IA responde com base nos playbooks e tickets similares (contexto limitado). Dicas: inclua o erro exato, serviço (NFS-e, boleto) e cliente. Ela busca em processos locais, histórico de tickets e artigos KB. Você pode rebater a resposta.</div>
+    <div id="iaChat" style="max-height:300px;overflow:auto;margin-bottom:8px"></div>
+    <textarea id="iaTexto" rows="4" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px" placeholder="Cole aqui o erro ou chat..."></textarea>
+    <div style="margin-top:8px;display:flex;gap:6px">
+      <button id="btnIa" style="${btn}">Perguntar à IA</button>
+      <button id="btnIaLimpar" style="${btn}">Limpar chat</button>
+    </div>
   </div>`;
 
   if (histItens) {
@@ -4135,16 +4162,36 @@ $("painel").addEventListener("click", async (e) => {
   if (e.target.id === "btnChecklistBuscar") { await carregarChecklist((($("checklistQ") || {}).value || "")); return; }
   if (e.target.id === "btnIa") {
     const txt = ($("iaTexto") || {}).value || "";
-    const resp = $("iaResp");
-    if (resp) resp.textContent = "Consultando IA...";
+    if (!txt.trim()) return;
+    const chat = $("iaChat");
+    iaHistorico.push({ role: "user", content: txt });
+    if (chat) chat.innerHTML += `<div style="margin-bottom:6px"><b>Você:</b> ${esc(txt)}</div>`;
+    if ($("iaTexto")) $("iaTexto").value = "";
     try {
-      const r = await fetch("/api/ia", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto: txt }) });
+      const r = await fetch("/api/ia", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto: txt, historico: iaHistorico.slice(0,-1) }) });
       const j = await r.json();
       if (j.erro) throw new Error(j.erro);
-      if (resp) resp.textContent = j.resposta || "(sem resposta)";
+      iaHistorico.push({ role: "assistant", content: j.resposta || "" });
+      let extra = "";
+      if (j.intencao) extra += `<div style="margin-top:4px;font-size:12px">🎯 Intenção: <b>${esc(j.intencao)}</b></div>`;
+      const fb = `<div style="margin-top:4px;font-size:12px">Útil? <button onclick="avaliarIa(${JSON.stringify(txt).replace(/</g,'\\\\u003c')},1)" style="border:none;background:none;cursor:pointer">👍</button> <button onclick="avaliarIa(${JSON.stringify(txt).replace(/</g,'\\\\u003c')},-1)" style="border:none;background:none;cursor:pointer">👎</button>${j.cache ? " (cache)" : ""}</div>`;
+      extra += fb;
+      if (j.artigos && j.artigos.length) {
+        extra += `<div style="margin-top:4px;font-size:12px">📚 Artigos: ${j.artigos.map(a => `<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.title)}</a>`).join(", ")}</div>`;
+      }
+      if (j.macros && j.macros.length) {
+        extra += `<div style="margin-top:4px;font-size:12px">🧩 Macros sugeridas: ${j.macros.map(m => esc(m.nome)).join("; ")}</div>`;
+      }
+      if (chat) chat.innerHTML += `<div style="margin-bottom:6px"><b>IA${j.modelo ? " ("+esc(j.modelo)+")" : ""}:</b> <span style="white-space:pre-wrap">${esc(j.resposta||"")}</span>${extra}</div>`;
     } catch (err) {
-      if (resp) resp.textContent = "Erro: " + (err.message || err);
+      if (chat) chat.innerHTML += `<div style="color:#a00;margin-bottom:6px">Erro: ${esc(err.message||err)}</div>`;
     }
+    return;
+  }
+  if (e.target.id === "btnIaLimpar") {
+    iaHistorico = [];
+    const chat = $("iaChat");
+    if (chat) chat.innerHTML = "";
     return;
   }
   if (e.target.id === "btnChecklistFechar") { checklistDados = null; checklistQ = ""; render(); return; }

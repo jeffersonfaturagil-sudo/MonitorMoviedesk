@@ -25,6 +25,7 @@ from config import (  # noqa: E402
     ACTIVE_STATUSES_EXCLUDED,
     OPENROUTER_API_KEY,
     OPENROUTER_MODEL,
+    OPENROUTER_MODELS,
     OPENROUTER_URL,
     AGENT_EMAIL,
     AGENT_NAME,
@@ -434,6 +435,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/dados": self._dados_rota,
             "/api/agenda": self._agenda_rota,
             "/api/artigos": self._artigos_get,
+            "/api/ia/cota": self._ia_cota,
             "/api/ticket-html": self._ticket_html,
             "/api/ticket-anexos": self._ticket_anexos,
             "/api/anexo": self._anexo,
@@ -961,6 +963,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/plantao": self._plantao_post,
             "/api/mesclas": self._mesclas_post,
             "/api/ia": self._ia_post,
+            "/api/ia/feedback": self._ia_feedback,
         }
         rota = rotas.get(path)
         if rota is None:
@@ -1008,11 +1011,26 @@ class Handler(BaseHTTPRequestHandler):
     def _ia_post(self, params: dict):
         body = self._read_body()
         texto = (body.get("texto") or "").strip()
+        historico = body.get("historico") or []
         if not texto:
             self._json({"erro": "informe texto"}, code=400)
             return
         if not OPENROUTER_API_KEY:
             self._json({"erro": "OPENROUTER_API_KEY nao configurada"}, code=400)
+            return
+        import hashlib, json
+        from pathlib import Path
+        cache_path = Path(__file__).resolve().parent.parent / "cache" / "ia_cache.json"
+        try:
+            cache = json.loads(cache_path.read_text(encoding="utf-8")) if cache_path.exists() else {}
+        except Exception:
+            cache = {}
+        if not isinstance(cache, dict):
+            cache = {}
+        chave = hashlib.sha256((texto + "|" + (body.get("historico") and str(body.get("historico")) or "")).encode("utf-8")).hexdigest()
+        if chave in cache:
+            c = cache[chave]
+            self._json({"ok": True, "resposta": c.get("resposta", ""), "modelo": c.get("modelo"), "artigos": c.get("artigos", []), "macros": c.get("macros", []), "intencao": c.get("intencao"), "cache": True})
             return
         # Contexto limitado: processos relevantes + tickets similares + artigos
         contexto = ""
@@ -1032,35 +1050,138 @@ class Handler(BaseHTTPRequestHandler):
         except Exception:
             pass
         contexto = contexto[:4000]
-        prompt = (
-            "Você é assistente de suporte do FaturAgil. Responda em português, de forma objetiva, "
-            "com passos práticos. Use apenas o contexto abaixo. Se não souber, diga que não há informação.\n\n"
-            "CONTEXTO:\n" + contexto + "\n\n"
-            "PERGUNTA/CHAT:\n" + texto[:3000]
-        )
+        prompt = "CONTEXTO:\n" + contexto + "\n\nPERGUNTA/CHAT:\n"
         try:
             import requests
-            resp = requests.post(
-                OPENROUTER_URL,
-                headers={"Authorization": "Bearer " + OPENROUTER_API_KEY,
-                         "Content-Type": "application/json"},
-                json={"model": OPENROUTER_MODEL,
-                      "messages": [{"role": "user", "content": prompt}],
-                      "max_tokens": 600},
-                timeout=60,
-            )
-            if resp.status_code != 200:
-                self._json({"erro": "OpenRouter HTTP %d: %s" % (resp.status_code, resp.text[:300])}, code=502)
-                return
-            data = resp.json()
-            resposta = ""
-            choices = data.get("choices") or []
-            if choices:
-                resposta = (choices[0].get("message") or {}).get("content") or ""
-            self._json({"ok": True, "resposta": resposta})
+            messages = [{"role": "system", "content": "Você é assistente de suporte do FaturAgil. Responda em português, de forma objetiva, com passos práticos. Use apenas o contexto. Se não souber, diga."}]
+            for h in (historico or []):
+                if isinstance(h, dict) and h.get("role") and h.get("content"):
+                    messages.append({"role": h["role"], "content": str(h["content"])[:2000]})
+            messages.append({"role": "user", "content": (prompt + "\n\n" + texto[:3000])})
+            ultimo_erro = None
+            for modelo in (OPENROUTER_MODELS or [OPENROUTER_MODEL]):
+                try:
+                    resp = requests.post(
+                        OPENROUTER_URL,
+                        headers={"Authorization": "Bearer " + OPENROUTER_API_KEY,
+                                 "Content-Type": "application/json"},
+                        json={"model": modelo,
+                              "messages": messages,
+                              "max_tokens": 600},
+                        timeout=60,
+                    )
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        resposta = ""
+                        choices = data.get("choices") or []
+                        if choices:
+                            resposta = (choices[0].get("message") or {}).get("content") or ""
+                        # Sugestoes de artigos e macros
+                        artigos = []
+                        macros = []
+                        try:
+                            from api_client import MovideskClient
+                            res = MovideskClient().search_articles(texto[:80], page_size=5)
+                            for it in (res.get("itens") or [])[:5]:
+                                artigos.append({"id": it.get("id"), "title": it.get("title"),
+                                                "url": "https://atendimento.faturagil.com.br/kb/article/%s" % it.get("id")})
+                        except Exception:
+                            pass
+                        try:
+                            from macros import sugerir_macros
+                            sug = sugerir_macros()
+                            for m in (sug.get("candidatos") or [])[:5]:
+                                macros.append({"nome": m.get("texto", "")[:80], "tickets": m.get("tickets")})
+                        except Exception:
+                            pass
+                        low = (texto or "").lower()
+                        if any(w in low for w in ("encerrar", "resolver", "concluir", "finalizar")):
+                            intencao = "encerrar"
+                        elif any(w in low for w in ("mesclar", "duplicado", "mesmo assunto", "mesma empresa")):
+                            intencao = "mesclar"
+                        elif any(w in low for w in ("escalar", "dev", "analise", "fornecedor", "implantacao")):
+                            intencao = "escalar"
+                        else:
+                            intencao = "responder"
+                        try:
+                            cache[chave] = {"resposta": resposta, "modelo": modelo, "artigos": artigos, "macros": macros, "intencao": intencao}
+                            # limita cache a 200
+                            if len(cache) > 200:
+                                for k in list(cache.keys())[:len(cache)-200]:
+                                    cache.pop(k, None)
+                            cache_path.write_text(json.dumps(cache, ensure_ascii=False), encoding="utf-8")
+                        except Exception:
+                            pass
+                        self._json({"ok": True, "resposta": resposta, "modelo": modelo,
+                                    "artigos": artigos, "macros": macros, "intencao": intencao})
+                        return
+                    ultimo_erro = "OpenRouter HTTP %d: %s" % (resp.status_code, resp.text[:200])
+                except Exception as exc:
+                    ultimo_erro = str(exc)
+            self._json({"erro": ultimo_erro or "falha"}, code=502)
         except Exception as exc:
             log.exception("Falha IA")
             self._json({"erro": str(exc)}, code=502)
+
+    def _ia_cota(self, params: dict):
+        if not OPENROUTER_API_KEY:
+            self._json({"erro": "OPENROUTER_API_KEY nao configurada"}, code=400)
+            return
+        import hashlib, json
+        from pathlib import Path
+        cache_path = Path(__file__).resolve().parent.parent / "cache" / "ia_cache.json"
+        try:
+            cache = json.loads(cache_path.read_text(encoding="utf-8")) if cache_path.exists() else {}
+        except Exception:
+            cache = {}
+        if not isinstance(cache, dict):
+            cache = {}
+        chave = hashlib.sha256((texto + "|" + (body.get("historico") and str(body.get("historico")) or "")).encode("utf-8")).hexdigest()
+        if chave in cache:
+            c = cache[chave]
+            self._json({"ok": True, "resposta": c.get("resposta", ""), "modelo": c.get("modelo"), "artigos": c.get("artigos", []), "macros": c.get("macros", []), "intencao": c.get("intencao"), "cache": True})
+            return
+        try:
+            import requests
+            # tenta /api/v1/auth/key
+            r = requests.get("https://openrouter.ai/api/v1/auth/key",
+                             headers={"Authorization": "Bearer " + OPENROUTER_API_KEY},
+                             timeout=30)
+            if r.status_code == 200:
+                data = r.json().get("data") or {}
+                self._json({"ok": True, "uso": data.get("usage"), "limite": data.get("limit"),
+                            "restante": data.get("limit") - data.get("usage") if data.get("limit") is not None and data.get("usage") is not None else None})
+                return
+            # fallback credits
+            r2 = requests.get("https://openrouter.ai/api/v1/credits",
+                              headers={"Authorization": "Bearer " + OPENROUTER_API_KEY},
+                              timeout=30)
+            self._json({"ok": r2.status_code == 200, "status": r2.status_code, "dados": r2.json() if r2.status_code==200 else r2.text[:300]})
+        except Exception as exc:
+            self._json({"erro": str(exc)}, code=502)
+
+    def _ia_feedback(self, params: dict):
+        body = self._read_body()
+        texto = (body.get("texto") or "").strip()
+        nota = body.get("nota")
+        if not texto:
+            self._json({"erro": "informe texto"}, code=400)
+            return
+        import hashlib, json, os
+        from pathlib import Path
+        p = Path(__file__).resolve().parent.parent / "cache" / "ia_feedback.json"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            dados = json.loads(p.read_text(encoding="utf-8")) if p.exists() else []
+        except Exception:
+            dados = []
+        if not isinstance(dados, list):
+            dados = []
+        dados.append({"texto": texto[:500], "nota": nota, "ts": __import__("datetime").datetime.now().isoformat(timespec="seconds")})
+        # limita a 500
+        dados = dados[-500:]
+        p.write_text(json.dumps(dados, ensure_ascii=False), encoding="utf-8")
+        self._json({"ok": True})
 
     def _read_body(self) -> dict:
         try:
