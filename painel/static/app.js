@@ -1133,6 +1133,8 @@ function toast(msg, tipo) {
     t = document.createElement("div");
     t.id = "toast";
     t.style.cssText = "position:fixed;bottom:20px;right:20px;background:#1f2937;color:#fff;padding:10px 14px;border-radius:8px;font-size:13px;z-index:9999;opacity:0;transition:opacity .2s;";
+  t.setAttribute("role","status");
+  t.setAttribute("aria-live","polite");
     document.body.appendChild(t);
   }
   t.textContent = msg;
