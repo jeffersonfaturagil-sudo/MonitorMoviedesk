@@ -1037,10 +1037,26 @@ class Handler(BaseHTTPRequestHandler):
         import uuid
         resposta_id = "resp-" + uuid.uuid4().hex[:12]
         fontes_utilizadas = []
+        low_texto = (texto or "").lower()
+        identidade = any(w in low_texto for w in (
+            "qual empresa", "qual a empresa", "voce responde", "você responde",
+            "voce e um", "você é um", "quem e voce", "quem é você",
+            "chatbot", "assistente", "o que voce faz", "o que você faz",
+            "com base em que", "para que serve", "qual sua funcao", "qual sua função",
+            "voce e da", "você é da",
+        ))
         # Contexto limitado: processos relevantes + tickets similares + artigos
         contexto = ""
+        if identidade:
+            contexto = ("\n## IDENTIDADE DO ASSISTENTE\n"
+                        "Você é o assistente de IA de apoio ao suporte da FaturAgil. "
+                        "Sua finalidade é ajudar o analista com dúvidas, procedimentos, "
+                        "históricos e orientações baseadas no conhecimento disponível da empresa. "
+                        "Responda diretamente, sem buscar tickets ou macros.\n")
         # Casos de referencia validados (prioridade)
         try:
+            if identidade:
+                raise Exception("skip")
             rawc, _ = self._carregar_casos()
             casos = [c for c in (rawc.get("casos") or []) if c.get("status") == "resolvido"]
             # relevancia simples por tokens
@@ -1063,18 +1079,26 @@ class Handler(BaseHTTPRequestHandler):
         except Exception:
             pass
         try:
+            if identidade:
+                raise Exception("skip")
             import processos
             docs, _, _ = processos.buscar(texto[:500])
             for d in (docs or [])[:3]:
+                if d.get("_confianca") == "fraco":
+                    continue
                 fontes_utilizadas.append({"tipo": "processo", "id": d.get("arquivo") or d.get("titulo")})
                 for sec in (d.get("secoes") or [])[:2]:
                     contexto += "\n## " + (sec.get("titulo") or "") + "\n" + (sec.get("texto") or "")[:800] + "\n"
         except Exception:
             pass
         try:
+            if identidade:
+                raise Exception("skip")
             from dados import buscar_historico
             hist = buscar_historico(texto, limite=5)
             for it in (hist.get("itens") or [])[:5]:
+                if (it.get("score") or 0) <= 0:
+                    continue
                 fontes_utilizadas.append({"tipo": "ticket", "id": it.get("ticket")})
                 contexto += "\n- Ticket #%s: %s (%s)" % (it.get("ticket"), (it.get("assunto") or "")[:120], (it.get("resolvido_em") or ""))
         except Exception:
@@ -1083,7 +1107,7 @@ class Handler(BaseHTTPRequestHandler):
         prompt = "CONTEXTO:\n" + contexto + "\n\nPERGUNTA/CHAT:\n"
         try:
             import requests
-            messages = [{"role": "system", "content": "Você é assistente de suporte do FaturAgil. Responda em português, de forma objetiva, com passos práticos. Priorize casos validados e playbooks. Diferencie claramente: (1) Fatos confirmados pelas fontes; (2) Hipóteses não confirmadas; (3) Informações ausentes; (4) Próximos passos recomendados. Não invente prazos, configurações, procedimentos executados, diagnósticos ou desfechos. Se não houver evidência suficiente, oriente coleta de informações ou encaminhamento. Cite fontes quando disponíveis. Se não souber, diga."}]
+            messages = [{"role": "system", "content": "Você é o assistente de IA de apoio ao suporte da FaturAgil. Sua finalidade é ajudar o analista com dúvidas, procedimentos, históricos e orientações baseadas no conhecimento disponível da empresa. Responda em português, de forma objetiva, com passos práticos. Para perguntas simples sobre sua identidade ou finalidade, responda diretamente. Priorize casos validados e playbooks. Diferencie claramente: (1) Fatos confirmados pelas fontes; (2) Hipóteses não confirmadas; (3) Informações ausentes; (4) Próximos passos recomendados. Nunca afirme que uma solicitação foi registrada, ação executada ou problema resolvido sem evidência explícita. Não invente prazos, configurações, procedimentos executados, diagnósticos ou desfechos. Se não houver evidência suficiente, oriente coleta de informações ou encaminhamento. Cite fontes quando disponíveis. Se não souber, diga."}]
             for h in (historico or []):
                 if isinstance(h, dict) and h.get("role") and h.get("content"):
                     messages.append({"role": h["role"], "content": str(h["content"])[:2000]})
@@ -1117,15 +1141,23 @@ class Handler(BaseHTTPRequestHandler):
                                                 "url": "https://atendimento.faturagil.com.br/kb/article/%s" % it.get("id")})
                         except Exception:
                             pass
-                        try:
-                            from macros import sugerir_macros
-                            sug = sugerir_macros()
-                            for m in (sug.get("candidatos") or [])[:5]:
-                                macros.append({"nome": m.get("texto", "")[:80], "tickets": m.get("tickets")})
-                        except Exception:
-                            pass
+                        if not identidade:
+                            try:
+                                from macros import sugerir_macros
+                                sug = sugerir_macros()
+                                toks = set((texto or "").lower().split())
+                                for m in (sug.get("candidatos") or []):
+                                    mt = (m.get("texto") or "").lower()
+                                    if any(t in mt for t in toks if len(t) >= 4):
+                                        macros.append({"nome": m.get("texto", "")[:80], "tickets": m.get("tickets")})
+                                        if len(macros) >= 5:
+                                            break
+                            except Exception:
+                                pass
                         low = (texto or "").lower()
-                        if any(w in low for w in ("encerrar", "resolver", "concluir", "finalizar")):
+                        if identidade:
+                            intencao = "responder"
+                        elif any(w in low for w in ("encerrar", "resolver", "concluir", "finalizar")):
                             intencao = "encerrar"
                         elif any(w in low for w in ("mesclar", "duplicado", "mesmo assunto", "mesma empresa")):
                             intencao = "mesclar"

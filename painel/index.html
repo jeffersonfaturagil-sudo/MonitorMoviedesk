@@ -4187,12 +4187,10 @@ $("painel").addEventListener("click", async (e) => {
       iaUltima = { texto: txt, resposta_id: j.resposta_id, fontes: j.fontes || [] };
       let extra = "";
       if (j.intencao) extra += `<div style="margin-top:4px;font-size:12px">🎯 Intenção: <b>${esc(j.intencao)}</b></div>`;
-      if (j.fontes && j.fontes.length) extra += `<div style="margin-top:4px;font-size:12px">📎 Fontes: ${j.fontes.map(f => esc(f.tipo)+":"+esc(f.id)).join(", ")}</div>`;
+      if (j.fontes && j.fontes.length) extra += `<div style="margin-top:4px;font-size:12px">📎 Fontes consultadas: ${j.fontes.map(f => esc(f.tipo)+":"+esc(f.id)).join(", ")}</div>`;
+      if (j.artigos && j.artigos.length) extra += `<div style="margin-top:4px;font-size:12px">📚 Artigos sugeridos (não incluídos no contexto): ${j.artigos.map(a => `<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.title)}</a>`).join(", ")}</div>`;
       const fb = `<div style="margin-top:4px;font-size:12px">Útil? <button onclick="avaliarIa(${JSON.stringify(txt).replace(/</g,'\\\\u003c')},1)" style="border:none;background:none;cursor:pointer">👍</button> <button onclick="avaliarIaNegativo(${JSON.stringify(txt).replace(/</g,'\\\\u003c')})" style="border:none;background:none;cursor:pointer">👎</button>${j.cache ? " (cache)" : ""}</div>`;
       extra += fb;
-      if (j.artigos && j.artigos.length) {
-        extra += `<div style="margin-top:4px;font-size:12px">📚 Artigos: ${j.artigos.map(a => `<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.title)}</a>`).join(", ")}</div>`;
-      }
       if (j.macros && j.macros.length) {
         extra += `<div style="margin-top:4px;font-size:12px">🧩 Macros sugeridas: ${j.macros.map(m => esc(m.nome)).join("; ")}</div>`;
       }
