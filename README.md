@@ -87,22 +87,22 @@ parados, mescláveis, pendências, satisfação, plantão e histórico de contat
   - Cada aba mostra um painel **"Cobertura de dados / limitações"** com o quanto do cache
     sustenta cada número (ações, `ownerHistories`, `reopenedIn`) — dados que o Movidesk
     não expõe (módulo/versão, releases, `parentTickets`) aparecem como indisponíveis.
-- **SLA e vencimentos**: regras do playbook contadas em **horário comercial**
+- **SLA e vencimentos**: regras do regras internas contadas em **horário comercial**
   (seg-sex, `08:00-12:00` e `13:00-18:00`, sem feriados): resposta em até **1 hora útil**
   após a última ação do cliente (ou em tickets **novos**); tickets aguardando cliente
   **pausam** o relógio. A aba reúne os vencidos/próximos do prazo e três filas de trabalho:
   - **Resposta (1h útil)**: quem precisa de resposta nossa.
   - **Continuidade** (`Retorno do Cliente - Continuidade`): passada 1 hora útil do nosso
-    envio, o playbook manda **ligar** — os itens "para ligar" ficam marcados (📞).
+    envio, o regras internas manda **ligar** — os itens "para ligar" ficam marcados (📞).
   - **Encerramento** (`Retorno do Cliente - Encerramento`): resolvido aguardando o cliente;
     vira **Resolvido automaticamente em 5 dias úteis** — traz um botão para copiar a
     justificativa padrão.
   - **Concluir** (`Retorno do Cliente` genérico): sugerimos a solução; sem OK do cliente em
     **3 dias úteis**, concluir.
   - **Orientação por status (responsável + próximo passo)**: cada linha traz o
-    **Responsável** e um **"próximo passo"** extraído do playbook, decidido pelo
+    **Responsável** e um **"próximo passo"** extraído do regras internas, decidido pelo
     *status/justificativa* (**não pelo assunto**) e sempre com a **regra citada**
-    (arquivo:linha) — assim dá pra mostrar pro time o que manda o playbook.
+    (arquivo:linha) — assim dá pra mostrar pro time o que manda o regras internas.
     Quando a pendência **não é (só) do Suporte**, o painel diz explicitamente o que
     o Suporte deve acompanhar e **o que não faz** (ex.: análise/dev não encaminha sem
     evidências, fornecedor é do fornecedor, implantação vai ao implantador).
@@ -110,11 +110,11 @@ parados, mescláveis, pendências, satisfação, plantão e histórico de contat
     liberação de versão, fornecedor ou implantação** — marcados com o responsável e
     com o que cabe ao Suporte (cobrar, manter no nome, atualizar o cliente).
   - A aba abre com a tabela **"O que fazer por status — o que é (e o que NÃO é) do
-    Suporte"** (referência das regras do `playbook-movidesk.txt` e
-    `playbook-suporte.txt`, incluindo as regras de evidências: "sempre ter
+    Suporte"** (referência das regras do `regras internas-movidesk.txt` e
+    `regras internas-suporte.txt`, incluindo as regras de evidências: "sempre ter
     evidências para não ter motivo de contestação").
   Como o Movidesk não devolve prazo nesta conta (`slaSolutionDate`/`slaResponseDate` vazios),
-  o vencimento é **derivado** do playbook (painel de "Cobertura de dados / limitações").
+  o vencimento é **derivado** do regras internas (painel de "Cobertura de dados / limitações").
   A aba também mostra a **fila do dia** (tickets novos/atualizados pelo cliente hoje;
   >15 pede reforço até a fila voltar a ~8).
 - **Fornecedor**: tickets com justificativa **Retorno de Fornecedor** ou tags
@@ -128,7 +128,7 @@ parados, mescláveis, pendências, satisfação, plantão e histórico de contat
   Mostra também as **reclamações** em aberto por atendente.
 - **Processos**: guia local de processos do time — digite o caso ("erro de
   faturamento", "credenciamento boleto", "e-mail NFS-e") e veja o passo a passo sem
-  abrir documento. Traz os playbooks de `painel/processos/*.txt` (indexados por
+  abrir documento. Traz os regras internass de `painel/processos/*.txt` (indexados por
   cabeçalhos `# seção`), com **seletor de agente** (suporte/dev/implantação/
   coordenação), chips de assunto e síntese por seção. Nas listas de tickets, o botão
   **📘 Processo** abre o passo a passo do serviço daquele ticket. Diretório/índice:
@@ -146,10 +146,10 @@ parados, mescláveis, pendências, satisfação, plantão e histórico de contat
   - Observação: a API do Movidesk não expõe o nome da macro usada, então a detecção é
     feita por **casamento de texto** (ignora acento/maiúsculas e exige fronteira de
     palavra).
-  - **Aprendidas do dado**: além do catálogo semeado pelos playbooks, o painel
+  - **Aprendidas do dado**: além do catálogo semeado pelos regras internass, o painel
     **aprende sozinho** as frases que se repetem em **5+ tickets** (aparecem com a
     etiqueta `aprendida`). Assim macros reais — cujo texto não bate com o título do
-    playbook — também são reconhecidas. Rodapés/assinaturas de e-mail são ignorados.
+    regras internas — também são reconhecidas. Rodapés/assinaturas de e-mail são ignorados.
 - **Satisfação**: permite escolher o intervalo de datas (a API aceita
   `responseDateGreaterThan`/`LessThan`). O padrão são os últimos 365 dias. A coluna
   **Nota** mostra o **enunciado oficial** da pergunta (`GET /survey/questions`), e não
@@ -225,15 +225,6 @@ da tela — o `report.py` só formata.
   Cada pessoa usa o próprio token.
 - Sem Python instalado: `sudo apt update && sudo apt install -y python3`.
 - Se faltar `requests`: `sudo apt install -y python3-requests`.
-
-## Novidades recentes
-
-- Assistente de IA (OpenRouter) na aba Dúvidas/Histórico: cole um chat/erro e receba sugestão com base nos playbooks e tickets similares.
-- Central de pendências acionáveis: sem primeira resposta, internas por espera, próximos do encerramento, saídas da carga.
-- Exportação CSV nas abas Ranking, Gargalos, Inteligência e Central.
-- SLA derivado do playbook com aviso explícito (campos oficiais do Movidesk vêm vazios nesta conta).
-- Agrupamento de abas em seções + busca de abas + filtros persistentes (localStorage).
-- Painel lateral de conversa HTML + anexos por ticket.
 
 ## Testes
 
