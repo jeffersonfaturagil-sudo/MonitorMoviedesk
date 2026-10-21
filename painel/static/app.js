@@ -507,7 +507,7 @@ function painelMinhaFila() {
   if (slaVencidos) chips.push(`<a href="#sla1h" data-tab="sla1h" style="text-decoration:none"><span class="pill red">⏰ SLA vencido: ${slaVencidos}</span></a>`);
   if (ligar) chips.push(`<a href="#sla1h" data-tab="sla1h" style="text-decoration:none"><span class="pill red">📞 Ligar: ${ligar}</span></a>`);
   if (encAting) chips.push(`<a href="#encerrar" data-tab="encerrar" style="text-decoration:none"><span class="pill blue">📬 Encerrar agora: ${encAting}</span></a>`);
-  if (novosHoje) chips.push(`<a href="#plantao" data-tab="plantao" style="text-decoration:none"><span class="pill green">🆕 Novos hoje: ${novosHoje}</span></a>`);
+  if (novosHoje) chips.push(`<a href="#plantao" data-tab="plantao" style="text-decoration:none"><span class="pill green">🆕 Fila hoje: ${novosHoje}</span></a>`);
   if (semDono) chips.push(`<a href="#criticos" data-tab="criticos" style="text-decoration:none"><span class="pill gray">Sem responsável: ${semDono}</span></a>`);
   if (!chips.length) return "";
   return `<div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:10px 14px;margin-bottom:12px">
