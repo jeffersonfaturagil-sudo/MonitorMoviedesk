@@ -436,6 +436,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/agenda": self._agenda_rota,
             "/api/artigos": self._artigos_get,
             "/api/ia/cota": self._ia_cota,
+            "/api/ia/casos": self._ia_casos_get,
             "/api/ticket-html": self._ticket_html,
             "/api/ticket-anexos": self._ticket_anexos,
             "/api/anexo": self._anexo,
@@ -964,6 +965,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/mesclas": self._mesclas_post,
             "/api/ia": self._ia_post,
             "/api/ia/feedback": self._ia_feedback,
+            "/api/ia/casos": self._ia_casos_post,
         }
         rota = rotas.get(path)
         if rota is None:
@@ -1034,6 +1036,28 @@ class Handler(BaseHTTPRequestHandler):
             return
         # Contexto limitado: processos relevantes + tickets similares + artigos
         contexto = ""
+        # Casos de referencia validados (prioridade)
+        try:
+            rawc, _ = self._carregar_casos()
+            casos = [c for c in (rawc.get("casos") or []) if c.get("status") == "resolvido"]
+            # relevancia simples por tokens
+            toks = set((texto or "").lower().split())
+            relevantes = []
+            for c in casos:
+                base = " ".join([c.get("pergunta",""), c.get("diagnostico",""), c.get("procedimento","")]).lower()
+                score = sum(1 for t in toks if t and t in base)
+                if score > 0:
+                    relevantes.append((score, c))
+            relevantes.sort(key=lambda x: -x[0])
+            for _, c in relevantes[:3]:
+                contexto += "\n## CASO VALIDADO: %s\nDiagnostico: %s\nProcedimento: %s\nResposta aprovada: %s\n" % (
+                    (c.get("pergunta") or "")[:200],
+                    (c.get("diagnostico") or "")[:400],
+                    (c.get("procedimento") or "")[:400],
+                    (c.get("resposta_aprovada") or "")[:400],
+                )
+        except Exception:
+            pass
         try:
             import processos
             docs, _, _ = processos.buscar(texto[:500])
@@ -1053,7 +1077,7 @@ class Handler(BaseHTTPRequestHandler):
         prompt = "CONTEXTO:\n" + contexto + "\n\nPERGUNTA/CHAT:\n"
         try:
             import requests
-            messages = [{"role": "system", "content": "Você é assistente de suporte do FaturAgil. Responda em português, de forma objetiva, com passos práticos. Use apenas o contexto. Se não souber, diga."}]
+            messages = [{"role": "system", "content": "Você é assistente de suporte do FaturAgil. Responda em português, de forma objetiva, com passos práticos. Priorize casos validados e playbooks. Diferencie fatos, hipóteses e informações ausentes. Cite fontes quando disponíveis. Não invente prazos ou desfechos. Se não souber, diga."}]
             for h in (historico or []):
                 if isinstance(h, dict) and h.get("role") and h.get("content"):
                     messages.append({"role": h["role"], "content": str(h["content"])[:2000]})
@@ -1237,6 +1261,93 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"erro": "falha ao gravar: %s" % exc}, code=500)
             return
         self._json({"ok": True})
+
+    def _carregar_casos(self):
+        import json
+        from pathlib import Path
+        p = Path(__file__).resolve().parent.parent / "cache" / "ia_casos.json"
+        try:
+            raw = json.loads(p.read_text(encoding="utf-8")) if p.exists() else {"schema": 1, "casos": []}
+        except Exception:
+            raw = {"schema": 1, "casos": []}
+        if not isinstance(raw, dict):
+            raw = {"schema": 1, "casos": []}
+        raw.setdefault("schema", 1)
+        if not isinstance(raw.get("casos"), list):
+            raw["casos"] = []
+        return raw, p
+
+    def _ia_casos_get(self, params: dict):
+        raw, _ = self._carregar_casos()
+        status = (params.get("status") or "").strip()
+        casos = raw.get("casos") or []
+        if status:
+            casos = [c for c in casos if c.get("status") == status]
+        self._json({"schema": raw.get("schema"), "total": len(casos), "casos": casos})
+
+    def _ia_casos_post(self, params: dict):
+        body = self._read_body()
+        acao = (body.get("acao") or "criar").strip()
+        raw, p = self._carregar_casos()
+        casos = raw.get("casos") or []
+        if acao == "criar":
+            import uuid
+            caso = {
+                "id": body.get("id") or ("caso-" + uuid.uuid4().hex[:8]),
+                "pergunta": (body.get("pergunta") or "").strip(),
+                "contexto": (body.get("contexto") or "").strip(),
+                "diagnostico": (body.get("diagnostico") or "").strip(),
+                "procedimento": (body.get("procedimento") or "").strip(),
+                "fontes": body.get("fontes") if isinstance(body.get("fontes"), list) else [],
+                "resposta_aprovada": (body.get("resposta_aprovada") or "").strip(),
+                "status": (body.get("status") or "pendente").strip(),
+                "validado_por": (body.get("validado_por") or "").strip(),
+                "validado_em": body.get("validado_em"),
+                "versao": int(body.get("versao") or 1),
+            }
+            if caso["status"] not in ("resolvido", "pendente", "hipotese", "escalonado"):
+                caso["status"] = "pendente"
+            if not caso["pergunta"]:
+                self._json({"erro": "pergunta obrigatoria"}, code=400)
+                return
+            # aprovacao explicita: status resolvido exige validado_por ou resposta_aprovada
+            if caso["status"] == "resolvido" and not (caso["validado_por"] or caso["resposta_aprovada"]):
+                caso["status"] = "pendente"
+            if not caso["validado_em"] and caso["status"] == "resolvido":
+                from datetime import datetime
+                caso["validado_em"] = datetime.now().isoformat(timespec="seconds")
+            casos.append(caso)
+            raw["casos"] = casos
+            try:
+                p.write_text(__import__("json").dumps(raw, ensure_ascii=False, indent=2), encoding="utf-8")
+            except Exception as exc:
+                self._json({"erro": "falha ao gravar: %s" % exc}, code=500)
+                return
+            self._json({"ok": True, "caso": caso})
+            return
+        if acao == "aprovar":
+            cid = (body.get("id") or "").strip()
+            for c in casos:
+                if c.get("id") == cid:
+                    c["status"] = "resolvido"
+                    if body.get("resposta_aprovada"):
+                        c["resposta_aprovada"] = str(body.get("resposta_aprovada")).strip()
+                    if body.get("validado_por"):
+                        c["validado_por"] = str(body.get("validado_por")).strip()
+                    from datetime import datetime
+                    c["validado_em"] = datetime.now().isoformat(timespec="seconds")
+                    c["versao"] = int(c.get("versao") or 1) + 1
+                    raw["casos"] = casos
+                    try:
+                        p.write_text(__import__("json").dumps(raw, ensure_ascii=False, indent=2), encoding="utf-8")
+                    except Exception as exc:
+                        self._json({"erro": "falha ao gravar: %s" % exc}, code=500)
+                        return
+                    self._json({"ok": True, "caso": c})
+                    return
+            self._json({"erro": "caso nao encontrado"}, code=404)
+            return
+        self._json({"erro": "acao invalida"}, code=400)
 
     def _read_body(self) -> dict:
         try:
