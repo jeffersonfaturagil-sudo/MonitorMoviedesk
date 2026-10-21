@@ -1114,11 +1114,8 @@ class Handler(BaseHTTPRequestHandler):
         # Contexto limitado: processos relevantes + tickets similares + artigos
         contexto = ""
         if identidade:
-            contexto = ("\n## IDENTIDADE DO ASSISTENTE\n"
-                        "Você é o assistente de IA de apoio ao suporte da FaturAgil. "
-                        "Sua finalidade é ajudar o analista com dúvidas, procedimentos, "
-                        "históricos e orientações baseadas no conhecimento disponível da empresa. "
-                        "Responda diretamente, sem buscar tickets ou macros.\n")
+            self._json({"ok": True, "resposta": "Sou seu copiloto técnico pessoal para o suporte da FaturAgil. Posso ajudar com dúvidas, procedimentos, históricos, análise de erros, mesclas e geração de textos. Pergunte o que precisar.", "modelo": "local", "artigos": [], "macros": [], "intencao": "responder", "fontes": [], "cache": False})
+            return
         # Conhecimento da empresa (compacto)
         try:
             from pathlib import Path
