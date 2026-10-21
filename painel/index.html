@@ -59,33 +59,33 @@
     </select>
   </div>
   <div class="tabs" id="tabs" role="tablist" aria-label="Seções do painel">
-    <span class="tab-group">Operação</span>
+    <span class="tab-group" onclick="this.nextElementSibling && (this._collapsed = !this._collapsed); const grp=this.textContent.trim(); toggleGrupo(grp)" style="cursor:pointer">Operação</span>
     <button class="tab active" data-tab="criticos" role="tab" aria-selected="true">Críticos <span class="cnt" id="cCrit"></span></button>
     <button class="tab" data-tab="pendencias" role="tab" aria-selected="false">Pendências <span class="cnt" id="cPend"></span></button>
     <button class="tab" data-tab="agenda" role="tab" aria-selected="false">Agenda <span class="cnt" id="cAgenda"></span></button>
     <button class="tab" data-tab="plantao" role="tab" aria-selected="false">Plantão <span class="cnt" id="cPlantao"></span></button>
     <button class="tab" data-tab="atencao" role="tab" aria-selected="false">Atenção <span class="cnt" id="cAten"></span></button>
     <button class="tab" data-tab="ok" role="tab" aria-selected="false">OK <span class="cnt" id="cOk"></span></button>
-    <span class="tab-group">SLA &amp; Mesclas</span>
+    <span class="tab-group" onclick="this.nextElementSibling && (this._collapsed = !this._collapsed); const grp=this.textContent.trim(); toggleGrupo(grp)" style="cursor:pointer">SLA &amp; Mesclas</span>
     <button class="tab" data-tab="mesclas" role="tab" aria-selected="false">Mescláveis <span class="cnt" id="cMescla"></span></button>
     <button class="tab" data-tab="sla1h" role="tab" aria-selected="false">SLA <span class="cnt" id="cSla1h"></span></button>
     <button class="tab" data-tab="encerrar" role="tab" aria-selected="false">Encerrar 5d <span class="cnt" id="cEncerrar"></span></button>
     <button class="tab" data-tab="terceiros" role="tab" aria-selected="false">Terceiros <span class="cnt" id="cTerc"></span></button>
-    <span class="tab-group">Conhecimento</span>
+    <span class="tab-group" onclick="this.nextElementSibling && (this._collapsed = !this._collapsed); const grp=this.textContent.trim(); toggleGrupo(grp)" style="cursor:pointer">Conhecimento</span>
     <button class="tab" data-tab="duvidas" role="tab" aria-selected="false">Dúvidas</button>
     <button class="tab" data-tab="horarios" role="tab" aria-selected="false">Horários</button>
     <button class="tab" data-tab="macros" role="tab" aria-selected="false">Macros <span class="cnt" id="cMacro"></span></button>
     <button class="tab" data-tab="processos" role="tab" aria-selected="false">Processos</button>
-    <span class="tab-group">Indicadores</span>
+    <span class="tab-group" onclick="this.nextElementSibling && (this._collapsed = !this._collapsed); const grp=this.textContent.trim(); toggleGrupo(grp)" style="cursor:pointer">Indicadores</span>
     <button class="tab" data-tab="pesquisa" role="tab" aria-selected="false">Satisfação <span class="cnt" id="cSat"></span></button>
     <button class="tab" data-tab="ranking" role="tab" aria-selected="false">Ranking</button>
     <button class="tab" data-tab="comparativo" role="tab" aria-selected="false">Comparativo</button>
     <button class="tab" data-tab="central" role="tab" aria-selected="false">Central</button>
-    <span class="tab-group">Relatórios</span>
+    <span class="tab-group" onclick="this.nextElementSibling && (this._collapsed = !this._collapsed); const grp=this.textContent.trim(); toggleGrupo(grp)" style="cursor:pointer">Relatórios</span>
     <button class="tab" data-tab="rel-tempo" role="tab" aria-selected="false">Tempo</button>
     <button class="tab" data-tab="rel-gargalos" role="tab" aria-selected="false">Gargalos</button>
     <button class="tab" data-tab="rel-intel" role="tab" aria-selected="false">Inteligência</button>
-    <span class="tab-group">Implantação</span>
+    <span class="tab-group" onclick="this.nextElementSibling && (this._collapsed = !this._collapsed); const grp=this.textContent.trim(); toggleGrupo(grp)" style="cursor:pointer">Implantação</span>
     <button class="tab" data-tab="implantacao" role="tab" aria-selected="false">Implantação <span class="cnt" id="cImplant"></span></button>
     <button class="tab" data-tab="acoes" role="tab" aria-selected="false">Ações</button>
   </div>
@@ -1284,6 +1284,25 @@ async function avaliarIaNegativo(texto) {
   } catch (e) {}
 }
 
+
+function toggleGrupo(nome) {
+  const grupos = {
+    "Operação": ["criticos","pendencias","agenda","plantao","atencao","ok"],
+    "SLA & Mesclas": ["mesclas","sla1h","encerrar","terceiros"],
+    "Conhecimento": ["duvidas","horarios","macros","processos"],
+    "Indicadores": ["pesquisa","ranking","comparativo","central"],
+    "Relatórios": ["rel-tempo","rel-gargalos","rel-intel"],
+    "Implantação": ["implantacao","acoes"],
+  };
+  const tabs = grupos[nome] || [];
+  const collapsed = (localStorage.getItem("grupo_"+nome) === "1");
+  const novo = collapsed ? "0" : "1";
+  localStorage.setItem("grupo_"+nome, novo);
+  tabs.forEach(t => {
+    const el = document.querySelector(`.tab[data-tab="${t}"]`);
+    if (el) el.style.display = (novo === "1") ? "none" : "";
+  });
+}
 function render() {
   if (dados && dados.agenda && !modeloAgendaPadrao) modeloAgendaPadrao = dados.agenda.texto;
   try {
@@ -4413,6 +4432,15 @@ document.addEventListener("change", (e) => {
   }
 });
 
+
+
+// Aplicar estado colapsado dos grupos
+(function() {
+  const grupos = ["Operação","SLA & Mesclas","Conhecimento","Indicadores","Relatórios","Implantação"];
+  grupos.forEach(g => {
+    if (localStorage.getItem("grupo_"+g) === "1") toggleGrupo(g);
+  });
+})();
 
 document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
   document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
