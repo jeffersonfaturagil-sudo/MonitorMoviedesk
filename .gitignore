@@ -20,3 +20,11 @@ venv/
 
 # Artefatos de teste
 .pytest_cache/
+
+# Documentacao auxiliar / auditoria (nao publicar)
+AUDITORIA_*.md
+CHECKPOINT*.md
+*-limites-e-retry.md
+imports-mortos.md
+painel/api-*.md
+.freebuff/
